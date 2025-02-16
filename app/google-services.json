@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "366999060801",
+    "project_id": "trainernotesapp",
+    "storage_bucket": "trainernotesapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:366999060801:android:39483fb16685f327faa1c0",
+        "android_client_info": {
+          "package_name": "com.davidmcdeveloper.trainernotes10"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpjMlnne3Is0ioimA9b7hSan5drOFsiOM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
