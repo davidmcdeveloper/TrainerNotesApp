@@ -49,12 +49,11 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    implementation(libs.androidx.material3) //Material3
     implementation(libs.firebase.firestore)
     implementation (platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
-    implementation(libs.androidx.navigation.runtime.ktx)
-    //BoM de Firebase
+    implementation(libs.androidx.navigation.compose) //BoM de Firebase
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

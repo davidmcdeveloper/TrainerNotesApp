@@ -7,10 +7,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun AddTeamScreen(db: FirebaseFirestore) {
+fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
     var teamName by remember { mutableStateOf(TextFieldValue()) }
     var category by remember { mutableStateOf(TextFieldValue()) }
 
