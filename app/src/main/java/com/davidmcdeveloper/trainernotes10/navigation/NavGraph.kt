@@ -28,7 +28,7 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth) {
             HomeScreen(navController)
         }
         composable(Screen.AddTeam.route) {
-            AddTeamScreen(navController, db) // Pasamos Firestore
+            AddTeamScreen(navController = navController, db = db) // Pasamos Firestore
         }
     }
 }

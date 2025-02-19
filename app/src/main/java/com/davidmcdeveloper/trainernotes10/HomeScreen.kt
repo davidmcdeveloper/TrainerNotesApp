@@ -43,7 +43,7 @@ fun HomeScreen(navController: NavController) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate("addTeam") },
+                onClick = { navController.navigate("add_team") },
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text("+")
