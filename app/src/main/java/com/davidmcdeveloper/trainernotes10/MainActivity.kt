@@ -15,7 +15,14 @@ class MainActivity : ComponentActivity() {
             TrainerNotesTheme {
                 val navController = rememberNavController()
                 val auth = FirebaseAuth.getInstance()
-                AppNavGraph(navController = navController, auth = auth)
+
+                val startDestination = if (auth.currentUser != null) {
+                    "home" //si está autenticado, va a home
+                } else {
+                    "login" //si no está autenticado, va a login
+                }
+
+                AppNavGraph(navController = navController, auth = auth, startDestination = startDestination)
             }
         }
     }

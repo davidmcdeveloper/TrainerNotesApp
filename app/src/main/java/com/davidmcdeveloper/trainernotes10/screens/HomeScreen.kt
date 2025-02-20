@@ -1,16 +1,20 @@
-package com.davidmcdeveloper.trainernotes10
+package com.davidmcdeveloper.trainernotes10.screens
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -21,7 +25,7 @@ fun HomeScreen(navController: NavController) {
     val db = FirebaseFirestore.getInstance()
     var equipos by remember { mutableStateOf(listOf<String>()) }
 
-    // Cargar equipos desde Firestore
+    // Carga equipos desde Firestore
     LaunchedEffect(Unit) {
         db.collection("equipos").get()
             .addOnSuccessListener { result ->
@@ -67,18 +71,38 @@ fun HomeScreen(navController: NavController) {
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(equipos) { equipo ->
+                        // Card para cada equipo
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(8.dp)
-                                .clickable { /* En el futuro: Navegar a detalles del equipo */ },
+                                .clickable {
+                                    // Navegar a la pantalla de detalles del equipo
+                                    navController.navigate("teamDetails/$equipo")
+                                },
+                            shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            Text(
-                                text = equipo,
-                                modifier = Modifier.padding(16.dp),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .padding(16.dp)
+                                    .fillMaxWidth()
+                            ) {
+                                // Aquí podrías agregar una imagen para el escudo del equipo, si la tienes
+                                Image(
+                                    painter = rememberAsyncImagePainter("url_de_imagen_de_equipo"), // Aquí deberías cargar la imagen de cada equipo
+                                    contentDescription = "Escudo del equipo",
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .align(Alignment.CenterHorizontally)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = equipo,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                )
+                            }
                         }
                     }
                 }
@@ -98,4 +122,5 @@ fun HomeScreen(navController: NavController) {
         }
     }
 }
+
 

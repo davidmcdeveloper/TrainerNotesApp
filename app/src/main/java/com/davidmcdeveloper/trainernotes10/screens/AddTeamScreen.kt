@@ -1,17 +1,21 @@
-package com.davidmcdeveloper.trainernotes10
+package com.davidmcdeveloper.trainernotes10.screens
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -26,31 +30,27 @@ import java.util.UUID
 fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
     val context = LocalContext.current
     var teamName by remember { mutableStateOf(TextFieldValue()) }
-    var category by remember { mutableStateOf(TextFieldValue()) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var isUploading by remember { mutableStateOf(false) }
     val storageRef = FirebaseStorage.getInstance().reference
 
-    // Selector de imagen desde galería
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri = uri
-    }
+    ) { uri: Uri? -> imageUri = uri }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        // Imagen del equipo
         imageUri?.let {
             Image(
                 painter = rememberAsyncImagePainter(it),
                 contentDescription = "Escudo del equipo",
                 modifier = Modifier
-                    .size(100.dp)
-                    .aspectRatio(1f)
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, Color.Gray, CircleShape)
+                    .align(Alignment.CenterHorizontally)
             )
         }
 
@@ -69,21 +69,19 @@ fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextField(
-            value = category,
-            onValueChange = { category = it },
-            label = { Text("Categoría (ej. Senior Masculino)") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
+        if (isUploading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        }
 
         Button(
             onClick = {
-                if (teamName.text.isNotEmpty() && category.text.isNotEmpty() && imageUri != null) {
-                    uploadImageAndSaveTeam(db, storageRef, teamName.text, category.text, imageUri!!, context, navController)
+                if (teamName.text.isNotEmpty() && imageUri != null) {
+                    isUploading = true
+                    uploadImageAndSaveTeam(db, storageRef, teamName.text, imageUri!!, context, navController) {
+                        isUploading = false
+                    }
                 } else {
-                    Toast.makeText(context, "Todos los campos son obligatorios", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Debes seleccionar un nombre y una imagen", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -97,10 +95,10 @@ fun uploadImageAndSaveTeam(
     db: FirebaseFirestore,
     storageRef: StorageReference,
     teamName: String,
-    category: String,
     imageUri: Uri,
-    context: android.content.Context,
-    navController: NavController
+    context: Context,
+    navController: NavController,
+    onComplete: () -> Unit
 ) {
     val fileName = "teams/${UUID.randomUUID()}"
     val imageRef = storageRef.child(fileName)
@@ -108,26 +106,25 @@ fun uploadImageAndSaveTeam(
     imageRef.putFile(imageUri)
         .addOnSuccessListener {
             imageRef.downloadUrl.addOnSuccessListener { uri ->
-                saveTeamToFirestore(db, teamName, category, uri.toString(), context, navController)
+                saveTeamToFirestore(db, teamName, uri.toString(), context, navController)
+                onComplete()
             }
         }
         .addOnFailureListener {
-            Toast.makeText(context, "Error al subir imagen", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error al subir la imagen", Toast.LENGTH_SHORT).show()
+            onComplete()
         }
 }
-
 
 fun saveTeamToFirestore(
     db: FirebaseFirestore,
     teamName: String,
-    category: String,
     imageUrl: String,
-    context: android.content.Context,
+    context: Context,
     navController: NavController
 ) {
     val teamData = hashMapOf(
         "nombre" to teamName,
-        "categoria" to category,
         "imagenUrl" to imageUrl
     )
 
@@ -135,7 +132,7 @@ fun saveTeamToFirestore(
         .set(teamData)
         .addOnSuccessListener {
             Toast.makeText(context, "Equipo añadido correctamente", Toast.LENGTH_SHORT).show()
-            navController.navigate("home")
+            navController.navigate("home") { popUpTo("home") { inclusive = true } }
         }
         .addOnFailureListener {
             Toast.makeText(context, "Error al guardar equipo", Toast.LENGTH_SHORT).show()

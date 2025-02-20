@@ -1,11 +1,10 @@
-package com.davidmcdeveloper.trainernotes10
+package com.davidmcdeveloper.trainernotes10.screens
 
 import android.content.Context
 import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,9 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import androidx.compose.ui.res.painterResource
 import androidx.core.content.edit
+import com.davidmcdeveloper.trainernotes10.R
 
 
 @Composable
