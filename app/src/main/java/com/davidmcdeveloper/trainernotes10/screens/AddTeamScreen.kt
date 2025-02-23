@@ -2,7 +2,6 @@ package com.davidmcdeveloper.trainernotes10.screens
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -84,7 +83,8 @@ fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
                     Toast.makeText(context, "Debes seleccionar un nombre y una imagen", Toast.LENGTH_SHORT).show()
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isUploading
         ) {
             Text("Añadir equipo")
         }
@@ -132,10 +132,14 @@ fun saveTeamToFirestore(
         .set(teamData)
         .addOnSuccessListener {
             Toast.makeText(context, "Equipo añadido correctamente", Toast.LENGTH_SHORT).show()
-            navController.navigate("home") { popUpTo("home") { inclusive = true } }
+
+            navController.navigate("home") {
+                popUpTo("home") { inclusive = true }
+            }
         }
         .addOnFailureListener {
             Toast.makeText(context, "Error al guardar equipo", Toast.LENGTH_SHORT).show()
         }
 }
+
 

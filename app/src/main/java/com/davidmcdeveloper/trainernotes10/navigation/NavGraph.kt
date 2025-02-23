@@ -15,6 +15,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Home : Screen("home")
     object AddTeam : Screen("add_team")
+    object TeamDetails : Screen("teamDetails")
 }
 
 @Composable
@@ -26,15 +27,16 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             LoginScreen(navController = navController, auth = auth, context = navController.context)
         }
         composable(Screen.Home.route) {
-            HomeScreen(navController)
+            HomeScreen(navController = navController)
         }
         composable(Screen.AddTeam.route) {
             AddTeamScreen(navController = navController, db = db) // Pasamos Firestore
         }
-        composable("teamDetails/{teamName}") { backStackEntry ->
+        composable("teamDetails/{teamName}/{teamImagenUrl}") { backStackEntry ->
             val teamName = backStackEntry.arguments?.getString("teamName")
-            teamName?.let {
-                TeamDetailsScreen(navController = navController, teamName = it,db = db) //Pantalla Home equipo
+            val teamImagenUrl = backStackEntry.arguments?.getString("teamImagenUrl")
+            if (teamName != null && teamImagenUrl != null) {
+                TeamDetailsScreen(navController = navController, teamName = teamName, teamImageUrl = teamImagenUrl, db = db)
             }
         }
     }

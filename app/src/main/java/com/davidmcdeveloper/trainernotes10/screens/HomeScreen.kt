@@ -5,16 +5,26 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.davidmcdeveloper.trainernotes10.Equipo
+import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -23,16 +33,25 @@ import com.google.firebase.firestore.FirebaseFirestore
 fun HomeScreen(navController: NavController) {
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
-    var equipos by remember { mutableStateOf(listOf<String>()) }
+    var equipos by remember { mutableStateOf(listOf<Equipo>()) }
 
     // Carga equipos desde Firestore
     LaunchedEffect(Unit) {
         db.collection("equipos").get()
             .addOnSuccessListener { result ->
-                equipos = result.documents.mapNotNull { it.id }
+                equipos = result.documents.mapNotNull { document ->
+                    val nombre = document.getString("nombre")
+                    val imagenUrl = document.getString("imagenUrl")
+                    Log.d("HomeScreen", "Nombre: $nombre, ImagenUrl: $imagenUrl")
+                    if (nombre != null && imagenUrl != null) {
+                        Equipo(nombre, imagenUrl)
+                    } else {
+                        null
+                    }
+                }
             }
-            .addOnFailureListener { e ->
-                Log.e("Firestore", "Error al obtener equipos", e)
+            .addOnFailureListener {
+                Log.e("Firestore", "Error al obtener equipos", it)
             }
     }
 
@@ -42,7 +61,18 @@ fun HomeScreen(navController: NavController) {
                 title = { Text("TrainerNotes") },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                ),
+                actions = {
+                    IconButton(onClick = {
+                        auth.signOut()
+                        navController.navigate("login") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar Sesión")
+                    }
+                }
+
             )
         },
         floatingActionButton = {
@@ -54,51 +84,43 @@ fun HomeScreen(navController: NavController) {
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Equipos Registrados",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(16.dp)
-            )
-
+        Column(modifier = Modifier.padding(paddingValues)) {
             if (equipos.isEmpty()) {
                 Text("No hay equipos registrados", style = MaterialTheme.typography.bodyMedium)
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     items(equipos) { equipo ->
-                        // Card para cada equipo
                         Card(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)
+                                .padding(4.dp)
+                                .aspectRatio(1f)
                                 .clickable {
-                                    // Navegar a la pantalla de detalles del equipo
-                                    navController.navigate("teamDetails/$equipo")
+                                    navController.navigate("teamDetails/${equipo.nombre.encode()}/${equipo.imagenUrl.encode()}")
                                 },
                             shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Column(
                                 modifier = Modifier
-                                    .padding(16.dp)
-                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                                    .fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                // Aquí podrías agregar una imagen para el escudo del equipo, si la tienes
                                 Image(
-                                    painter = rememberAsyncImagePainter("url_de_imagen_de_equipo"), // Aquí deberías cargar la imagen de cada equipo
+                                    painter = rememberAsyncImagePainter(equipo.imagenUrl),
                                     contentDescription = "Escudo del equipo",
                                     modifier = Modifier
-                                        .size(40.dp)
-                                        .align(Alignment.CenterHorizontally)
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .aspectRatio(1f),
+                                    contentScale = ContentScale.FillWidth
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = equipo,
+                                    text = equipo.nombre,
                                     style = MaterialTheme.typography.bodyLarge,
                                     modifier = Modifier.align(Alignment.CenterHorizontally)
                                 )
@@ -107,20 +129,11 @@ fun HomeScreen(navController: NavController) {
                     }
                 }
             }
-
-            Button(
-                onClick = {
-                    auth.signOut()
-                    navController.navigate("login") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text("Cerrar sesión")
-            }
         }
     }
+}
+fun String.encode(): String {
+    return java.net.URLEncoder.encode(this, Charsets.UTF_8.name())
 }
 
 
