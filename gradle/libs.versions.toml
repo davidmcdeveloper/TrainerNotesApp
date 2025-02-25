@@ -12,7 +12,7 @@ googleGmsGoogleServices = "4.4.2"
 firebaseBom = "33.8.0"  # Última versión de BoM
 firebaseFirestore = "25.1.2"
 firebaseAuthKtx = "23.2.0"
-material3MaterialIconsExtended = "1.1.2"
+material3MaterialIconsExtended = "1.3.1" #Material3 con iconos extendidos
 navigation-compose = "2.8.7"
 
 
