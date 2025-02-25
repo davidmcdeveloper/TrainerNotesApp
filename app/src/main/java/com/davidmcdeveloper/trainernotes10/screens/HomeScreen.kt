@@ -4,21 +4,19 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -27,6 +25,7 @@ import com.davidmcdeveloper.trainernotes10.Equipo
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.net.URLEncoder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +97,7 @@ fun HomeScreen(navController: NavController) {
                                 .padding(4.dp)
                                 .aspectRatio(1f)
                                 .clickable {
-                                    navController.navigate("teamDetails/${equipo.nombre.encode()}/${equipo.imagenUrl.encode()}")
+                                    navController.navigate(Screen.TeamDetails.createRoute(equipo.nombre))
                                 },
                             shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -132,8 +131,3 @@ fun HomeScreen(navController: NavController) {
         }
     }
 }
-fun String.encode(): String {
-    return java.net.URLEncoder.encode(this, Charsets.UTF_8.name())
-}
-
-

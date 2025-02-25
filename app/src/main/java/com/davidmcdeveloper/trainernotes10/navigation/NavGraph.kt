@@ -2,20 +2,25 @@ package com.davidmcdeveloper.trainernotes10.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.davidmcdeveloper.trainernotes10.screens.AddTeamScreen
 import com.davidmcdeveloper.trainernotes10.screens.HomeScreen
 import com.davidmcdeveloper.trainernotes10.screens.LoginScreen
 import com.davidmcdeveloper.trainernotes10.screens.TeamDetailsScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.net.URLDecoder
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Home : Screen("home")
     object AddTeam : Screen("add_team")
-    object TeamDetails : Screen("teamDetails")
+    object TeamDetails : Screen("teamDetails/{teamName}"){
+        fun createRoute(teamName: String) = "teamDetails/$teamName"
+    }
 }
 
 @Composable
@@ -32,11 +37,15 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
         composable(Screen.AddTeam.route) {
             AddTeamScreen(navController = navController, db = db) // Pasamos Firestore
         }
-        composable("teamDetails/{teamName}/{teamImagenUrl}") { backStackEntry ->
-            val teamName = backStackEntry.arguments?.getString("teamName")
-            val teamImagenUrl = backStackEntry.arguments?.getString("teamImagenUrl")
-            if (teamName != null && teamImagenUrl != null) {
-                TeamDetailsScreen(navController = navController, teamName = teamName, teamImageUrl = teamImagenUrl, db = db)
+        composable(
+            route = Screen.TeamDetails.route,
+            arguments = listOf(
+                navArgument("teamName") { type = NavType.StringType }
+            )
+        ){ backStackEntry ->
+            val teamName = backStackEntry.arguments?.getString("teamName") ?: ""
+            if (teamName != null) {
+                TeamDetailsScreen(navController = navController, teamName = teamName, db = db)
             }
         }
     }
