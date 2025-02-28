@@ -116,7 +116,7 @@ fun TeamDetailsScreen(
                         contentDescription = "Escudo del equipo",
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp),
+                            .height(160.dp),
                         contentScale = ContentScale.Crop
                     )
                     Spacer(modifier = Modifier.height(16.dp))
