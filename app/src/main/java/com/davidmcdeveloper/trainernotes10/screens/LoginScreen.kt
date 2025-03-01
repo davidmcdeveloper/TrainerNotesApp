@@ -208,4 +208,3 @@ fun registerUser(auth: FirebaseAuth, email: String, password: String, context: C
         }
 }
 //TODO: añadir más formas de registro
-//TODO: personalizar interfaz de usuario

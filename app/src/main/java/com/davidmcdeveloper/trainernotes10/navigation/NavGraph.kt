@@ -6,13 +6,14 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import com.davidmcdeveloper.trainernotes10.screens.AddCategoryScreen
 import com.davidmcdeveloper.trainernotes10.screens.AddTeamScreen
 import com.davidmcdeveloper.trainernotes10.screens.HomeScreen
 import com.davidmcdeveloper.trainernotes10.screens.LoginScreen
 import com.davidmcdeveloper.trainernotes10.screens.TeamDetailsScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import java.net.URLDecoder
+
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -20,6 +21,9 @@ sealed class Screen(val route: String) {
     object AddTeam : Screen("add_team")
     object TeamDetails : Screen("teamDetails/{teamName}"){
         fun createRoute(teamName: String) = "teamDetails/$teamName"
+    }
+    object AddCategory : Screen("addCategory/{teamName}"){
+        fun createRoute(teamName: String) = "addCategory/$teamName"
     }
 }
 
@@ -47,6 +51,15 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             if (teamName != null) {
                 TeamDetailsScreen(navController = navController, teamName = teamName, db = db)
             }
+        }
+        composable(
+            route = Screen.AddCategory.route,
+            arguments = listOf(
+                navArgument("teamName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val teamName = backStackEntry.arguments?.getString("teamName") ?: ""
+            AddCategoryScreen(navController = navController, teamName = teamName, db = db)
         }
     }
 }

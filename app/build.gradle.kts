@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose) //BoM de Firebase
     implementation("io.coil-kt:coil-compose:2.7.0") //Dependencias de Coil (imágenes)
     implementation("com.google.firebase:firebase-storage-ktx:21.0.1") //Dependencias de Firebase Storage
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.0") //Corrutinas de Firebase
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

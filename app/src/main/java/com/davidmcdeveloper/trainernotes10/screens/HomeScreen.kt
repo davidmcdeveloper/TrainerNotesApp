@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -25,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.davidmcdeveloper.trainernotes10.Equipo
+import com.davidmcdeveloper.trainernotes10.dataclass.Equipo
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -87,11 +88,11 @@ fun HomeScreen(navController: NavController) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate("add_team") },
-                modifier = Modifier.padding(16.dp)
             ) {
-                Text("+")
+                Icon(Icons.Filled.Add, contentDescription = "Añadir equipo")
             }
         }
+
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues)) {
             if (equipos.isEmpty()) {
