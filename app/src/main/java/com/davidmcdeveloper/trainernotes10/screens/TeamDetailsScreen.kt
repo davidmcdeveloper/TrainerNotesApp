@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -59,12 +58,11 @@ fun TeamDetailsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var isDeleting by remember { mutableStateOf(false) }
     var imageUrl by remember { mutableStateOf("") }
-    var categories by remember { mutableStateOf<List<Categoria>>(emptyList()) }
+    var categories by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(key1 = teamName) {
         val teamDocument = db.collection("equipos").document(teamName).get().await()
         if (teamDocument.exists()) {
-
             imageUrl = teamDocument.getString("imagenUrl") ?: ""
         } else {
             Toast.makeText(context, "No se han encontrado los detalles del equipo", Toast.LENGTH_SHORT).show()
@@ -72,13 +70,22 @@ fun TeamDetailsScreen(
         isLoading = false
     }
     LaunchedEffect(key1 = teamName) {
-        db.collection("equipos").document(teamName).collection("categorias").addSnapshotListener { snapshot, e ->
+    db.collection("equipos").document(teamName)
+        .addSnapshotListener { snapshot, e ->
             if (e != null) {
                 Log.w("DetailsScreen", "Listen failed.", e)
                 return@addSnapshotListener
             }
-            if (snapshot != null && !snapshot.isEmpty) {
-                categories = snapshot.documents.mapNotNull { it.toObject(Categoria::class.java) }
+            if (snapshot != null && snapshot.exists()) {
+                val data = snapshot.data
+                if (data != null) {
+                    val categoriasList = data["categorias"]
+                    if (categoriasList is List<*> && categoriasList.all { it is String }) {
+                        categories = categoriasList as List<String>
+                    } else {
+                         categories = emptyList()
+                    }
+                }
             } else {
                 Log.d("DetailsScreen", "Current data: null")
                 categories = emptyList()
@@ -101,8 +108,10 @@ fun TeamDetailsScreen(
                 ),
                 navigationIcon = {
                     IconButton(onClick = { navController.navigate("home") }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver a la lista de equipos")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver a la lista de equipos"
+                        )
                     }
                 },
                 actions = {
@@ -113,21 +122,17 @@ fun TeamDetailsScreen(
                             .getReferenceFromUrl(imageUrl)
                         val categoriesRef = teamRef.collection("categorias")
 
-                        // Obtener todas las categorías del equipo
                         categoriesRef.get()
                             .addOnSuccessListener { querySnapshot ->
-                                // Lista para almacenar las tareas de eliminación de categorías
-                                val deleteCategoryTasks = mutableListOf<com.google.android.gms.tasks.Task<Void>>()
+                                val deleteCategoryTasks =
+                                    mutableListOf<com.google.android.gms.tasks.Task<Void>>()
 
-                                // Itera sobre cada documento de categoría y añade su tarea de eliminación
                                 for (document in querySnapshot.documents) {
                                     deleteCategoryTasks.add(document.reference.delete())
                                 }
 
-                                // Espera a que todas las tareas de eliminación de categorías se completen
                                 com.google.android.gms.tasks.Tasks.whenAll(deleteCategoryTasks)
                                     .addOnSuccessListener {
-                                        // Ahora que se han eliminado todas las categorías, eliminamos la imagen y el equipo
                                         storageRef.delete()
                                             .addOnSuccessListener {
                                                 teamRef.delete()
@@ -181,9 +186,11 @@ fun TeamDetailsScreen(
             )
         },
     ) { paddingValues ->
-        Box(modifier = Modifier
-            .padding(paddingValues)
-            .fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+        ) {
             if (isLoading || isDeleting) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
@@ -203,21 +210,20 @@ fun TeamDetailsScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        items(categories) { categoria ->
+                        items(categories) { categoryName -> //Ahora recibimos el nombre.
                             Button(
                                 onClick = {
-                                        Toast.makeText(context, "Has pulsado la categoría: ${categoria.nombre}", Toast.LENGTH_SHORT).show()
-                                          },
+                                    navController.navigate(Screen.CategoryHome.createRoute(categoryName)) //Pasamos el nombre
+                                    },
                                 modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                               .fillMaxWidth()
+                               .padding(horizontal = 8.dp, vertical = 4.dp),
                                 shape = RoundedCornerShape(16.dp)
-                                ) {
-                                Text(text = categoria.nombre)
+                            ) {
+                            Text(text = categoryName) //Mostramos el nombre.
                             }
                         }
                     }
-
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 

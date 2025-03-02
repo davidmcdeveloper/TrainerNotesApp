@@ -34,7 +34,11 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.davidmcdeveloper.trainernotes10.dataclass.Categoria
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.UUID
+import kotlin.text.set
+import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -108,16 +112,22 @@ fun saveCategoryToFirestore(
     context: android.content.Context,
     navController: NavController
 ) {
+    val categoryId = UUID.randomUUID().toString() // Generar un ID único para la categoría
     val categoryData = hashMapOf(
         "nombre" to categoryName,
     )
 
-    db.collection("equipos").document(teamName).collection("categorias").document(categoryName)
+    //Guardamos la categoria con el id creado.
+    db.collection("equipos").document(teamName).collection("categorias").document(categoryId)
         .set(categoryData)
         .addOnSuccessListener {
-            Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
-
-            navController.navigate(Screen.TeamDetails.createRoute(teamName))
+            //Una vez guardada, actualizamos el documento del equipo con el nombre de la categoria
+            db.collection("equipos").document(teamName)
+                .update("categorias", FieldValue.arrayUnion(categoryName)) //Aquí actualiza el campo categorias, añadiento el nombre.
+                .addOnSuccessListener {
+                    Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
+                    navController.navigate(Screen.TeamDetails.createRoute(teamName))
+                }
         }
         .addOnFailureListener {
             Toast.makeText(context, "Error al guardar categoría", Toast.LENGTH_SHORT).show()
