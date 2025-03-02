@@ -1,6 +1,5 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,9 +33,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import java.util.Locale
-import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,26 +111,12 @@ fun saveCategoryToFirestore(
     navController: NavController
 ) {
     val teamRef = db.collection("equipos").document(teamId) //Buscamos el ID.
-    val uuid = UUID.randomUUID().toString()
-    val categoryId = "${categoryName.replace("\\s+".toRegex(), "").lowercase(Locale.getDefault())}-$uuid" // Creamos el ID.
-
-    teamRef.get().addOnSuccessListener { document ->
-        if (document.exists()) {
-            val categoryMap = mapOf("nombre" to categoryName) // Creamos un mapa con el nombre de la categoría
-            val subcollectionRef = teamRef.collection("categorias").document(categoryId) //Creamos el id.
-            subcollectionRef.set(categoryMap) //Guardamos la categoria.
-                .addOnSuccessListener {
-                    Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
-                    navController.popBackStack()
-                }
-                .addOnFailureListener {
-                    Toast.makeText(context, "Error al guardar categoría", Toast.LENGTH_SHORT).show()
-                }
-        } else {
-            Log.e("AddCategoryScreen", "Documento del equipo no encontrado")
-            Toast.makeText(context, "Error: Documento del equipo no encontrado", Toast.LENGTH_SHORT).show()
+    teamRef.update("categorias", FieldValue.arrayUnion(categoryName))
+        .addOnSuccessListener {
+            Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
+            navController.popBackStack()
         }
-    }.addOnFailureListener {
-        Toast.makeText(context, "Error al guardar categoría", Toast.LENGTH_SHORT).show()
-    }
+        .addOnFailureListener {
+            Toast.makeText(context, "Error al guardar categoría", Toast.LENGTH_SHORT).show()
+        }
 }
