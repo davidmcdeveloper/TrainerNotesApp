@@ -13,9 +13,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -91,6 +94,11 @@ fun CategoryHomeScreen(
     }
 
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { navController.navigate(Screen.Home.route) }) {
+                Icon(Icons.Filled.Home, contentDescription = "Volver al listado de equipos")
+            }
+        },
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(categoryName) },

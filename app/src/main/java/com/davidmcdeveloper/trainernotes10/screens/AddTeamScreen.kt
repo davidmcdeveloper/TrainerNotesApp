@@ -1,13 +1,14 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,10 +18,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,9 +29,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,40 +40,41 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil.compose.rememberAsyncImagePainter
 import com.davidmcdeveloper.trainernotes10.R
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.StorageReference
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
+import kotlinx.coroutines.tasks.await
+import java.io.IOException
+import java.io.InputStream
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
     val context = LocalContext.current
-    var teamName by remember { mutableStateOf(TextFieldValue()) }
+    var teamName by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    var isUploading by remember { mutableStateOf(false) }
-    val storageRef = FirebaseStorage.getInstance().reference
-
+    val storage = Firebase.storage
+    val bitmap = imageUri?.let { loadBitmapFromUri(context, it) }
     val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        imageUri = uri
-    }
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri -> imageUri = uri }
+    )
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Agregar equipo") },
+                title = { Text("Añadir equipo") },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
@@ -85,152 +87,138 @@ fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
                     }
                 }
             )
-        },
+        }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues) // Añadir padding para evitar superposición con la TopAppBar
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(paddingValues)
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-            ) {
-                Box(
+            if (isLoading) {
+                CircularProgressIndicator()
+            } else {
+                Column(
                     modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .border(2.dp, Color.Gray, CircleShape)
-                        .background(if (imageUri == null) Color.LightGray else Color.Transparent) // Fondo gris claro solo si no hay imagen seleccionada
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    if (imageUri != null) {
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUri),
-                            contentDescription = "Escudo del equipo",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Image(
-                            painter = painterResource(id = R.drawable.defaultteam),
-                            contentDescription = "Escudo del equipo",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                }
-                IconButton(
-                    onClick = { imagePickerLauncher.launch("image/*") },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .background(Color.Transparent, CircleShape)
-                        .size(40.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.AddCircle,
-                        contentDescription = "Seleccionar imagen",
-                        tint = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextField(
-                value = teamName,
-                onValueChange = { teamName = it },
-                label = { Text("Nombre del equipo") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (isUploading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            }
-
-            Button(
-                onClick = {
-                    if (teamName.text.isNotEmpty() && imageUri != null) {
-                        isUploading = true
-                        uploadImageAndSaveTeam(
-                            db,
-                            storageRef,
-                            teamName.text,
-                            imageUri!!,
-                            context,
-                            navController
-                        ) {
-                            isUploading = false
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                    ) {
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Imagen seleccionada",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.defaultteam),
+                                contentDescription = "Escudo por defecto",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
                         }
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "Debes seleccionar un nombre y una imagen",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Button(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(bottom = 4.dp)
+                                .size(24.dp)
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = "Añadir imagen")
+                        }
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isUploading
-            ) {
-                Text("Añadir equipo")
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = teamName,
+                        onValueChange = { teamName = it },
+                        label = { Text("Nombre del equipo") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Button(
+                        onClick = {
+                            if (teamName.isNotEmpty() && imageUri != null) {
+                                isLoading = true
+                                val imageName = "${UUID.randomUUID()}.jpg"
+                                val storageRef = storage.reference.child("teams/$imageName")
+
+                                storageRef.putFile(imageUri!!)
+                                    .addOnSuccessListener {
+                                        storageRef.downloadUrl
+                                            .addOnSuccessListener { uri ->
+                                                val imageUrl = uri.toString()
+                                                saveTeamToFirestore(db, teamName, imageUrl, context, navController)
+                                                isLoading = false
+                                            }
+                                            .addOnFailureListener {
+                                                Toast.makeText(context, "Error al subir la imagen", Toast.LENGTH_SHORT).show()
+                                                isLoading = false
+                                            }
+                                    }
+                                    .addOnFailureListener {
+                                        Toast.makeText(context, "Error al subir la imagen", Toast.LENGTH_SHORT).show()
+                                        isLoading = false
+                                    }
+                            } else {
+                                Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = "Crear equipo", textAlign = TextAlign.Center)
+                    }
+                }
             }
         }
     }
 }
 
-fun uploadImageAndSaveTeam(
-    db: FirebaseFirestore,
-    storageRef: StorageReference,
-    teamName: String,
-    imageUri: Uri,
-    context: Context,
-    navController: NavController,
-    onComplete: () -> Unit
-) {
-    val fileName = "teams/${UUID.randomUUID()}"
-    val imageRef = storageRef.child(fileName)
-
-    imageRef.putFile(imageUri)
-        .addOnSuccessListener {
-            imageRef.downloadUrl.addOnSuccessListener { uri ->
-                saveTeamToFirestore(db, teamName, uri.toString(), context, navController)
-                onComplete()
-            }
+fun loadBitmapFromUri(context: Context, uri: Uri): Bitmap? {
+    var input: InputStream? = null
+    try {
+        input = context.contentResolver.openInputStream(uri)
+        return BitmapFactory.decodeStream(input)
+    } catch (e: IOException) {
+        e.printStackTrace()
+    } finally {
+        try {
+            input?.close()
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
-        .addOnFailureListener {
-            Toast.makeText(context, "Error al subir la imagen", Toast.LENGTH_SHORT).show()
-            onComplete()
-        }
+    }
+    return null
 }
 
 fun saveTeamToFirestore(
     db: FirebaseFirestore,
     teamName: String,
     imageUrl: String,
-    context: Context,
+    context: android.content.Context,
     navController: NavController
 ) {
+    val teamId = UUID.randomUUID().toString()
     val teamData = hashMapOf(
         "nombre" to teamName,
         "imagenUrl" to imageUrl
     )
 
-    db.collection("equipos").document(teamName)
+    db.collection("equipos").document(teamId)
         .set(teamData)
         .addOnSuccessListener {
-            Toast.makeText(context, "Equipo añadido correctamente", Toast.LENGTH_SHORT).show()
-
-            navController.navigate("home") {
-                popUpTo("home") { inclusive = true }
-            }
+            Toast.makeText(context, "Equipo creado correctamente", Toast.LENGTH_SHORT).show()
+            navController.navigate("home")
         }
         .addOnFailureListener {
-            Toast.makeText(context, "Error al guardar equipo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Error al crear equipo", Toast.LENGTH_SHORT).show()
         }
 }

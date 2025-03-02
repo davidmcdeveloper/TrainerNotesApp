@@ -1,13 +1,16 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -16,9 +19,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,109 +30,106 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.davidmcdeveloper.trainernotes10.dataclass.Categoria
-import com.davidmcdeveloper.trainernotes10.navigation.Screen
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import java.util.UUID
-import kotlin.text.set
-import kotlin.toString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddCategoryScreen(navController: NavController, teamName: String, db: FirebaseFirestore) {
-    var categoryName by remember { mutableStateOf(TextFieldValue()) }
+fun AddCategoryScreen(
+    navController: NavController,
+    teamId: String, //Añadimos el parametro.
+    db: FirebaseFirestore //Añadimos el parametro.
+) {
     val context = LocalContext.current
+    var categoryName by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Agregar Categoría") },
+                title = { Text("Añadir categoría") },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate(Screen.TeamDetails.createRoute(teamName)) }) {
+                    IconButton(onClick = { navController.navigate("home") }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver a los detalles del equipo"
+                            contentDescription = "Volver a la lista de equipos"
                         )
                     }
                 }
             )
-        },
-        containerColor = Color.Black
+        }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Text(text = "Introduzca el nombre de la categoría")
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextField(
-                value = categoryName,
-                onValueChange = { categoryName = it },
-                label = { Text("Ej. Senior Masculino") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    if (categoryName.text.isNotEmpty()) {
-                        saveCategoryToFirestore(db, teamName, categoryName.text, context, navController)
-                    } else {
-                        Toast.makeText(
-                            context,
-                            "Debes introducir un nombre para la categoría",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text("Guardar categoría")
+                OutlinedTextField(
+                    value = categoryName,
+                    onValueChange = { categoryName = it },
+                    label = { Text("Nombre de la categoría") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = {
+                        if (categoryName.isNotEmpty()) {
+                            saveCategoryToFirestore(db, teamId, categoryName, context, navController) //Pasamos el ID.
+                        } else {
+                            Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Crear categoría")
+                }
             }
         }
     }
 }
+
 fun saveCategoryToFirestore(
     db: FirebaseFirestore,
-    teamName: String,
+    teamId: String, //Recibimos el id.
     categoryName: String,
     context: android.content.Context,
     navController: NavController
 ) {
-    val categoryId = UUID.randomUUID().toString() // Generar un ID único para la categoría
-    val categoryData = hashMapOf(
-        "nombre" to categoryName,
-    )
+    val teamRef = db.collection("equipos").document(teamId) //Buscamos el ID.
 
-    //Guardamos la categoria con el id creado.
-    db.collection("equipos").document(teamName).collection("categorias").document(categoryId)
-        .set(categoryData)
-        .addOnSuccessListener {
-            //Una vez guardada, actualizamos el documento del equipo con el nombre de la categoria
-            db.collection("equipos").document(teamName)
-                .update("categorias", FieldValue.arrayUnion(categoryName)) //Aquí actualiza el campo categorias, añadiento el nombre.
-                .addOnSuccessListener {
-                    Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
-                    navController.navigate(Screen.TeamDetails.createRoute(teamName))
-                }
+    teamRef.get().addOnSuccessListener { document ->
+        if (document.exists()) {
+            val categorias = document.get("categorias")
+            if (categorias != null && categorias is List<*>) {
+                val updatedCategorias = categorias.toMutableList()
+                updatedCategorias.add(categoryName)
+                teamRef.update("categorias", updatedCategorias)
+            } else {
+                val newCategorias = listOf(categoryName)
+                teamRef.update("categorias", newCategorias)
+            }
+            Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
+            navController.popBackStack()
+        } else {
+            Log.e("AddCategoryScreen", "Documento del equipo no encontrado")
+            Toast.makeText(context, "Error: Documento del equipo no encontrado", Toast.LENGTH_SHORT).show()
         }
-        .addOnFailureListener {
-            Toast.makeText(context, "Error al guardar categoría", Toast.LENGTH_SHORT).show()
-        }
+    }.addOnFailureListener {
+        Toast.makeText(context, "Error al guardar categoría", Toast.LENGTH_SHORT).show()
+    }
 }

@@ -18,16 +18,17 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 const val ARG_TEAM_NAME = "teamName"
 const val ARG_CATEGORY_NAME = "categoryName"
+const val ARG_TEAM_ID = "teamId"
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Login : Screen("login")
     object AddTeam : Screen("add_team")
-    object AddCategory: Screen("addCategory/{$ARG_TEAM_NAME}"){
-        fun createRoute(teamName: String) = "addCategory/$teamName"
+    object AddCategory: Screen("addCategory/{$ARG_TEAM_ID}"){
+        fun createRoute(teamId: String) = "addCategory/$teamId"
     }
-    object TeamDetails: Screen("teamDetails/{$ARG_TEAM_NAME}"){
-        fun createRoute(teamName: String) = "teamDetails/$teamName"
+    object TeamDetails : Screen("team_details/{$ARG_TEAM_ID}") {
+        fun createRoute(teamId: String) = "team_details/$teamId"
     }
     object CategoryHome: Screen("categoryHome/{$ARG_CATEGORY_NAME}"){
         fun createRoute(categoryName: String) = "categoryHome/$categoryName"
@@ -51,20 +52,20 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
         composable(
             route = Screen.TeamDetails.route,
             arguments = listOf(
-                navArgument(ARG_TEAM_NAME) { type = NavType.StringType }
+                navArgument(ARG_TEAM_ID) { type = NavType.StringType } // Modificamos el argumento.
             )
         ){ backStackEntry ->
-            val teamName = backStackEntry.arguments?.getString(ARG_TEAM_NAME) ?: ""
-            TeamDetailsScreen(navController = navController, teamName = teamName, db = db)
+            val teamId = backStackEntry.arguments?.getString(ARG_TEAM_ID) ?: "" //Lo obtenemos de forma correcta.
+            TeamDetailsScreen(navController = navController, teamId = teamId, db = db)
         }
         composable(
             route = Screen.AddCategory.route,
             arguments = listOf(
-                navArgument(ARG_TEAM_NAME) { type = NavType.StringType }
+                navArgument(ARG_TEAM_ID) { type = NavType.StringType } // Modificamos el argumento.
             )
         ) { backStackEntry ->
-            val teamName = backStackEntry.arguments?.getString(ARG_TEAM_NAME) ?: ""
-            AddCategoryScreen(navController = navController, teamName = teamName, db = db)
+            val teamId = backStackEntry.arguments?.getString(ARG_TEAM_ID) ?: "" //Lo obtenemos de forma correcta.
+            AddCategoryScreen(navController = navController, teamId = teamId, db = db)
         }
         composable(
             route = Screen.CategoryHome.route,

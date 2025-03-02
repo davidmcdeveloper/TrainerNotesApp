@@ -41,7 +41,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.davidmcdeveloper.trainernotes10.dataclass.Categoria
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -52,57 +51,59 @@ import kotlinx.coroutines.tasks.await
 fun TeamDetailsScreen(
     navController: NavController,
     db: FirebaseFirestore,
-    teamName: String
+    teamId: String
 ) {
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var isDeleting by remember { mutableStateOf(false) }
     var imageUrl by remember { mutableStateOf("") }
+    var teamName by remember { mutableStateOf("")}
     var categories by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    LaunchedEffect(key1 = teamName) {
-        val teamDocument = db.collection("equipos").document(teamName).get().await()
+    LaunchedEffect(key1 = teamId) {
+        val teamDocument = db.collection("equipos").document(teamId).get().await()
         if (teamDocument.exists()) {
             imageUrl = teamDocument.getString("imagenUrl") ?: ""
+            teamName = teamDocument.getString("nombre") ?: "" //Obtenemos el nombre.
         } else {
             Toast.makeText(context, "No se han encontrado los detalles del equipo", Toast.LENGTH_SHORT).show()
         }
         isLoading = false
     }
-    LaunchedEffect(key1 = teamName) {
-    db.collection("equipos").document(teamName)
-        .addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                Log.w("DetailsScreen", "Listen failed.", e)
-                return@addSnapshotListener
-            }
-            if (snapshot != null && snapshot.exists()) {
-                val data = snapshot.data
-                if (data != null) {
-                    val categoriasList = data["categorias"]
-                    if (categoriasList is List<*> && categoriasList.all { it is String }) {
-                        categories = categoriasList as List<String>
-                    } else {
-                         categories = emptyList()
-                    }
+    LaunchedEffect(key1 = teamId) {
+        db.collection("equipos").document(teamId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.w("DetailsScreen", "Listen failed.", e)
+                    return@addSnapshotListener
                 }
-            } else {
-                Log.d("DetailsScreen", "Current data: null")
-                categories = emptyList()
+                if (snapshot != null && snapshot.exists()) {
+                    val data = snapshot.data
+                    if (data != null) {
+                        val categoriasList = data["categorias"]
+                        if (categoriasList is List<*> && categoriasList.all { it is String }) {
+                            categories = categoriasList as List<String>
+                        } else {
+                            categories = emptyList()
+                        }
+                    }
+                } else {
+                    Log.d("DetailsScreen", "Current data: null")
+                    categories = emptyList()
+                }
             }
-        }
     }
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                navController.navigate(Screen.AddCategory.createRoute(teamName))
+                navController.navigate(Screen.AddCategory.createRoute(teamId)) //Pasamos el ID.
             }) {
                 Icon(Icons.Filled.Add, contentDescription = "Añadir categoría")
             }
         },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(teamName) },
+                title = { Text(teamName) }, //Mostramos el nombre.
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
@@ -117,7 +118,7 @@ fun TeamDetailsScreen(
                 actions = {
                     IconButton(onClick = {
                         isDeleting = true
-                        val teamRef = db.collection("equipos").document(teamName)
+                        val teamRef = db.collection("equipos").document(teamId)
                         val storageRef = FirebaseStorage.getInstance()
                             .getReferenceFromUrl(imageUrl)
                         val categoriesRef = teamRef.collection("categorias")
@@ -214,13 +215,13 @@ fun TeamDetailsScreen(
                             Button(
                                 onClick = {
                                     navController.navigate(Screen.CategoryHome.createRoute(categoryName)) //Pasamos el nombre
-                                    },
+                                },
                                 modifier = Modifier
-                               .fillMaxWidth()
-                               .padding(horizontal = 8.dp, vertical = 4.dp),
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
                                 shape = RoundedCornerShape(16.dp)
                             ) {
-                            Text(text = categoryName) //Mostramos el nombre.
+                                Text(text = categoryName) //Mostramos el nombre.
                             }
                         }
                     }

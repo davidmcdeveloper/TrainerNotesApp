@@ -3,11 +3,13 @@ package com.davidmcdeveloper.trainernotes10.screens
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,9 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -38,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,66 +60,36 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    val auth = FirebaseAuth.getInstance()
+    var equipos by remember { mutableStateOf<List<Pair<String, Equipo>>>(emptyList()) } //Modificamos la variable.
     val db = FirebaseFirestore.getInstance()
-    var equipos by remember { mutableStateOf(listOf<Equipo>()) }
+    val auth = FirebaseAuth.getInstance()
     val scope = rememberCoroutineScope()
-
-    // Carga equipos desde Firestore
-    LaunchedEffect(Unit) {
-        db.collection("equipos").get()
-            .addOnSuccessListener { result ->
-                equipos = result.documents.mapNotNull { document ->
-                    val nombre = document.getString("nombre")
-                    val imagenUrl = document.getString("imagenUrl")
-                    Log.d("HomeScreen", "Nombre: $nombre, ImagenUrl: $imagenUrl")
-                    if (nombre != null && imagenUrl != null) {
-                        Equipo(nombre, imagenUrl)
-                    } else {
-                        null
-                    }
-                }
-            }
-            .addOnFailureListener {
-                Log.e("Firestore", "Error al obtener equipos", it)
-            }
-    }
+    var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { navController.navigate(Screen.AddTeam.route) }) {
+                Icon(Icons.Filled.Add, contentDescription = "Añadir equipo")
+            }
+        },
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "TrainerNotes",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                        },
+            androidx.compose.material3.CenterAlignedTopAppBar(
+                title = { Text("Trainer Notes") },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 actions = {
                     IconButton(onClick = {
                         auth.signOut()
-                        navController.navigate("login") {
-                            popUpTo("login") { inclusive = true }
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
                         }
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Cerrar Sesión")
                     }
                 }
-
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate("add_team") },
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Añadir equipo")
-            }
         }
-
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues)) {
             if (equipos.isEmpty()) {
@@ -124,7 +98,7 @@ fun HomeScreen(navController: NavController) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(equipos) { equipo ->
+                    items(equipos) { (teamId, equipo) ->
                         Card(
                             modifier = Modifier
                                 .padding(8.dp)
@@ -132,7 +106,7 @@ fun HomeScreen(navController: NavController) {
                                 .clickable {
                                     scope.launch {
                                         delay(300) // Añadir un retraso de 300ms
-                                        navController.navigate(Screen.TeamDetails.createRoute(equipo.nombre))
+                                        navController.navigate(Screen.TeamDetails.createRoute(teamId)) //Pasamos el id.
                                     }
                                 },
                             shape = CircleShape,
@@ -166,6 +140,25 @@ fun HomeScreen(navController: NavController) {
                     }
                 }
             }
+        }
+        LaunchedEffect(Unit) {
+            db.collection("equipos").get()
+                .addOnSuccessListener { result ->
+                    equipos = result.documents.mapNotNull { document ->
+                        val nombre = document.getString("nombre")
+                        val imagenUrl = document.getString("imagenUrl")
+                        val id = document.id //Obtenemos el id.
+                        Log.d("HomeScreen", "Nombre: $nombre, ImagenUrl: $imagenUrl")
+                        if (nombre != null && imagenUrl != null) {
+                            Pair(id,Equipo(nombre, imagenUrl)) //Añadimos el id.
+                        } else {
+                            null
+                        }
+                    }
+                }
+                .addOnFailureListener {
+                    Log.e("Firestore", "Error al obtener equipos", it)
+                }
         }
     }
 }
