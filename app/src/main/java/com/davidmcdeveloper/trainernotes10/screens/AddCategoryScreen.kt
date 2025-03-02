@@ -35,6 +35,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.Locale
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,20 +113,21 @@ fun saveCategoryToFirestore(
     navController: NavController
 ) {
     val teamRef = db.collection("equipos").document(teamId) //Buscamos el ID.
+    val uuid = UUID.randomUUID().toString()
+    val categoryId = "${categoryName.replace("\\s+".toRegex(), "").lowercase(Locale.getDefault())}-$uuid" // Creamos el ID.
 
     teamRef.get().addOnSuccessListener { document ->
         if (document.exists()) {
-            val categorias = document.get("categorias")
-            if (categorias != null && categorias is List<*>) {
-                val updatedCategorias = categorias.toMutableList()
-                updatedCategorias.add(categoryName)
-                teamRef.update("categorias", updatedCategorias)
-            } else {
-                val newCategorias = listOf(categoryName)
-                teamRef.update("categorias", newCategorias)
-            }
-            Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
-            navController.popBackStack()
+            val categoryMap = mapOf("nombre" to categoryName) // Creamos un mapa con el nombre de la categoría
+            val subcollectionRef = teamRef.collection("categorias").document(categoryId) //Creamos el id.
+            subcollectionRef.set(categoryMap) //Guardamos la categoria.
+                .addOnSuccessListener {
+                    Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
+                    navController.popBackStack()
+                }
+                .addOnFailureListener {
+                    Toast.makeText(context, "Error al guardar categoría", Toast.LENGTH_SHORT).show()
+                }
         } else {
             Log.e("AddCategoryScreen", "Documento del equipo no encontrado")
             Toast.makeText(context, "Error: Documento del equipo no encontrado", Toast.LENGTH_SHORT).show()

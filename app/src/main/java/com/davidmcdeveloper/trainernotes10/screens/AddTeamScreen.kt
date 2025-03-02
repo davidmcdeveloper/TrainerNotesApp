@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -49,12 +50,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.davidmcdeveloper.trainernotes10.R
+import com.davidmcdeveloper.trainernotes10.dataclass.Equipo
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
-import kotlinx.coroutines.tasks.await
 import java.io.IOException
 import java.io.InputStream
+import java.util.Locale
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,14 +115,18 @@ fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
                             Image(
                                 bitmap = bitmap.asImageBitmap(),
                                 contentDescription = "Imagen seleccionada",
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
                         } else {
                             Image(
                                 painter = painterResource(id = R.drawable.defaultteam),
                                 contentDescription = "Escudo por defecto",
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
                         }
@@ -203,17 +209,15 @@ fun saveTeamToFirestore(
     db: FirebaseFirestore,
     teamName: String,
     imageUrl: String,
-    context: android.content.Context,
+    context: Context,
     navController: NavController
 ) {
-    val teamId = UUID.randomUUID().toString()
-    val teamData = hashMapOf(
-        "nombre" to teamName,
-        "imagenUrl" to imageUrl
-    )
+    val uuid = UUID.randomUUID().toString()
+    val teamId = "${teamName.replace("\\s+".toRegex(), "").lowercase(Locale.getDefault())}-$uuid" // Creamos el ID.
+    val team = Equipo(teamName, imageUrl)
 
     db.collection("equipos").document(teamId)
-        .set(teamData)
+        .set(team)
         .addOnSuccessListener {
             Toast.makeText(context, "Equipo creado correctamente", Toast.LENGTH_SHORT).show()
             navController.navigate("home")
