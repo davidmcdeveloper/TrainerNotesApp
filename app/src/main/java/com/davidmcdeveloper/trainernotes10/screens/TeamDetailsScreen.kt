@@ -2,7 +2,6 @@ package com.davidmcdeveloper.trainernotes10.screens
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -56,6 +58,7 @@ fun TeamDetailsScreen(
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     var isDeleting by remember { mutableStateOf(false) }
+    var showDeleteConfirmationDialog by remember { mutableStateOf(false) } // Estado para el diálogo
     var imageUrl by remember { mutableStateOf("") }
     var teamName by remember { mutableStateOf("")}
     var categories by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -116,71 +119,7 @@ fun TeamDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        isDeleting = true
-                        val teamRef = db.collection("equipos").document(teamId)
-                        val storageRef = FirebaseStorage.getInstance()
-                            .getReferenceFromUrl(imageUrl)
-                        val categoriesRef = teamRef.collection("categorias")
-
-                        categoriesRef.get()
-                            .addOnSuccessListener { querySnapshot ->
-                                val deleteCategoryTasks =
-                                    mutableListOf<com.google.android.gms.tasks.Task<Void>>()
-
-                                for (document in querySnapshot.documents) {
-                                    deleteCategoryTasks.add(document.reference.delete())
-                                }
-
-                                com.google.android.gms.tasks.Tasks.whenAll(deleteCategoryTasks)
-                                    .addOnSuccessListener {
-                                        storageRef.delete()
-                                            .addOnSuccessListener {
-                                                teamRef.delete()
-                                                    .addOnSuccessListener {
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Equipo y categorías eliminados correctamente",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
-                                                        navController.navigate("home") {
-                                                            popUpTo("home") { inclusive = true }
-                                                        }
-                                                    }
-                                                    .addOnFailureListener {
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Error al eliminar el equipo",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
-                                                    }
-                                            }
-                                            .addOnFailureListener {
-                                                Toast.makeText(
-                                                    context,
-                                                    "Error al eliminar la imagen del equipo",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                    }
-                                    .addOnFailureListener {
-                                        Toast.makeText(
-                                            context,
-                                            "Error al eliminar las categorías del equipo",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                            }
-                            .addOnFailureListener {
-                                Toast.makeText(
-                                    context,
-                                    "Error al obtener las categorías del equipo",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                isDeleting = false
-                            }
-                            .addOnCompleteListener { isDeleting = false }
-                    }) {
+                    IconButton(onClick = {showDeleteConfirmationDialog = true}) {
                         Icon(Icons.Filled.Delete, contentDescription = "Eliminar equipo")
                     }
                 }
@@ -228,6 +167,101 @@ fun TeamDetailsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
+            }
+            // Dialogo de confirmacion
+            if (showDeleteConfirmationDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteConfirmationDialog = false },
+                    title = { Text("Eliminar Equipo") },
+                    text = {
+                        Column {
+                            Text("¿Estás seguro de que quieres eliminar el equipo '$teamName' y todo su contenido?")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Esta acción es irreversible.", fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            isDeleting = true
+                            val teamRef = db.collection("equipos").document(teamId)
+                            val storageRef = FirebaseStorage.getInstance()
+                                .getReferenceFromUrl(imageUrl)
+                            val categoriesRef = teamRef.collection("categorias")
+
+                            categoriesRef.get()
+                                .addOnSuccessListener { querySnapshot ->
+                                    val deleteCategoryTasks =
+                                        mutableListOf<com.google.android.gms.tasks.Task<Void>>()
+
+                                    for (document in querySnapshot.documents) {
+                                        deleteCategoryTasks.add(document.reference.delete())
+                                    }
+
+                                    com.google.android.gms.tasks.Tasks.whenAll(deleteCategoryTasks)
+                                        .addOnSuccessListener {
+                                            storageRef.delete()
+                                                .addOnSuccessListener {
+                                                    teamRef.delete()
+                                                        .addOnSuccessListener {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Equipo y categorías eliminados correctamente",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                            navController.navigate("home") {
+                                                                popUpTo("home") { inclusive = true }
+                                                            }
+                                                        }
+                                                        .addOnFailureListener {
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Error al eliminar el equipo",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                }
+                                                .addOnFailureListener {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Error al eliminar la imagen del equipo",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                        }
+                                        .addOnFailureListener {
+                                            Toast.makeText(
+                                                context,
+                                                "Error al eliminar las categorías del equipo",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                }
+                                .addOnFailureListener {
+                                    Toast.makeText(
+                                        context,
+                                        "Error al obtener las categorías del equipo",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    isDeleting = false
+                                }
+                                .addOnCompleteListener { isDeleting = false }
+                            showDeleteConfirmationDialog = false
+                        }) {
+                            if (isDeleting){
+                                CircularProgressIndicator()
+                            }else{
+                                Text("Eliminar")
+                            }
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            showDeleteConfirmationDialog = false
+                        }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
         }
     }

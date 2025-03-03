@@ -7,9 +7,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.davidmcdeveloper.trainernotes10.screens.AddCategoryScreen
+import com.davidmcdeveloper.trainernotes10.screens.AddJugadorScreen
 import com.davidmcdeveloper.trainernotes10.screens.AddTeamScreen
 import com.davidmcdeveloper.trainernotes10.screens.CategoryHomeScreen
 import com.davidmcdeveloper.trainernotes10.screens.HomeScreen
+import com.davidmcdeveloper.trainernotes10.screens.JugadoresScreen
 import com.davidmcdeveloper.trainernotes10.screens.LoginScreen
 import com.davidmcdeveloper.trainernotes10.screens.TeamDetailsScreen
 import com.google.firebase.auth.FirebaseAuth
@@ -32,6 +34,12 @@ sealed class Screen(val route: String) {
     }
     object CategoryHome: Screen("categoryHome/{$ARG_CATEGORY_NAME}"){
         fun createRoute(categoryName: String) = "categoryHome/$categoryName"
+    }
+    object Jugadores: Screen("jugadores/{$ARG_CATEGORY_NAME}"){
+        fun createRoute(categoryName: String) = "jugadores/$categoryName"
+    }
+    object AddJugador: Screen("addJugador/{$ARG_CATEGORY_NAME}"){
+        fun createRoute(categoryName: String) = "addJugador/$categoryName"
     }
 }
 
@@ -76,6 +84,25 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
             CategoryHomeScreen(navController = navController, categoryName = categoryName, db = db)
         }
+        composable(
+            route = Screen.Jugadores.route,
+            arguments = listOf(
+                navArgument(ARG_CATEGORY_NAME) { type = NavType.StringType }
+            )
+        ){ backStackEntry ->
+            val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
+            JugadoresScreen(navController = navController, categoryName = categoryName, db = db)
+        }
+        composable(
+            route = Screen.AddJugador.route,
+            arguments = listOf(
+                navArgument(ARG_CATEGORY_NAME) { type = NavType.StringType }
+            )
+        ){ backStackEntry ->
+            val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
+            AddJugadorScreen(navController = navController, categoryName = categoryName, db = db)
+        }
+
     }
 }
 

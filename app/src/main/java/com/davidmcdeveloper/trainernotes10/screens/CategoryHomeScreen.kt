@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +24,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +56,7 @@ fun CategoryHomeScreen(
     val context = LocalContext.current
     var imageUrl by remember { mutableStateOf("") }
     var teamName by remember { mutableStateOf("") }
+    var showDeleteConfirmationDialog by remember { mutableStateOf(false) } // Estado para el diálogo
 
     // LaunchedEffect 1: Obtener el teamName
     LaunchedEffect(key1 = categoryName) {
@@ -114,39 +117,7 @@ fun CategoryHomeScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        // Lógica para eliminar la categoría
-                        val categoryRef = db.collection("equipos")
-                            .whereArrayContains("categorias", categoryName) //Encuentra el equipo que contiene la categoria.
-                        categoryRef.get().addOnSuccessListener { querySnapshot ->
-                            if (!querySnapshot.isEmpty) {
-                                val docRef = querySnapshot.documents[0].reference // Obtener la referencia del primer documento encontrado
-                                val subcollectionRef = docRef.collection("categorias") // Referencia a la subcolección "categorias"
-                                subcollectionRef.whereEqualTo("nombre", categoryName) //Encuentra la categoria.
-                                    .get().addOnSuccessListener { querySnapshot ->
-                                        if (!querySnapshot.isEmpty){
-                                            val docToDelete = querySnapshot.documents[0].reference // Obtener la referencia del primer documento encontrado
-                                            docToDelete.delete().addOnSuccessListener {
-                                                Toast.makeText(context, "Categoría eliminada correctamente", Toast.LENGTH_SHORT).show()
-                                                navController.popBackStack()
-                                            }
-                                                .addOnFailureListener {
-                                                    Toast.makeText(context, "Error al eliminar la categoría", Toast.LENGTH_SHORT).show()
-                                                }
-                                        }else{
-                                            Toast.makeText(context, "No se ha encontrado la categoría", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                    .addOnFailureListener{
-                                        Toast.makeText(context, "Error al obtener la categoría", Toast.LENGTH_SHORT).show()
-                                    }
-                            } else {
-                                Toast.makeText(context, "No se ha encontrado el equipo al que pertenece la categoría", Toast.LENGTH_SHORT).show()
-                            }
-                        }.addOnFailureListener {
-                            Toast.makeText(context, "Error al obtener el equipo al que pertenece la categoría", Toast.LENGTH_SHORT).show()
-                        }
-                    }) {
+                    IconButton(onClick = {showDeleteConfirmationDialog = true}) {
                         Icon(Icons.Filled.Delete, contentDescription = "Eliminar categoría")
                     }
                 }
@@ -184,12 +155,15 @@ fun CategoryHomeScreen(
                         Text(text = "Asistencias", style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold))
                     }
                     Button(onClick = {
-                        Toast.makeText(context, "Has pulsado Jugadores", Toast.LENGTH_SHORT).show()
+                        navController.navigate(Screen.Jugadores.createRoute(categoryName))
                     },
                         modifier = Modifier
                             .fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp)) {
-                        Text(text = "Jugadores", style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold))
+                        Text(
+                            text = "Jugadores",
+                            style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        )
                     }
                     Button(onClick = {
                         Toast.makeText(context, "Has pulsado Objetivos", Toast.LENGTH_SHORT).show()
@@ -201,6 +175,65 @@ fun CategoryHomeScreen(
                     }
                 }
             }
+        }
+        // Diálogo de confirmación
+        if (showDeleteConfirmationDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirmationDialog = false },
+                title = { Text("Eliminar Categoria") },
+                text = {
+                    Column {
+                        Text("¿Estás seguro de que quieres eliminar la categoría '$categoryName'?")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Esta acción es irreversible.", fontWeight = FontWeight.Bold)
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        // Lógica para eliminar la categoría
+                        val categoryRef = db.collection("equipos")
+                            .whereArrayContains("categorias", categoryName) //Encuentra el equipo que contiene la categoria.
+                        categoryRef.get().addOnSuccessListener { querySnapshot ->
+                            if (!querySnapshot.isEmpty) {
+                                val docRef = querySnapshot.documents[0].reference // Obtener la referencia del primer documento encontrado
+                                val subcollectionRef = docRef.collection("categorias") // Referencia a la subcolección "categorias"
+                                subcollectionRef.whereEqualTo("nombre", categoryName) //Encuentra la categoria.
+                                    .get().addOnSuccessListener { querySnapshot ->
+                                        if (!querySnapshot.isEmpty){
+                                            val docToDelete = querySnapshot.documents[0].reference // Obtener la referencia del primer documento encontrado
+                                            docToDelete.delete().addOnSuccessListener {
+                                                Toast.makeText(context, "Categoría eliminada correctamente", Toast.LENGTH_SHORT).show()
+                                                navController.popBackStack()
+                                            }
+                                                .addOnFailureListener {
+                                                    Toast.makeText(context, "Error al eliminar la categoría", Toast.LENGTH_SHORT).show()
+                                                }
+                                        }else{
+                                            Toast.makeText(context, "No se ha encontrado la categoría", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                    .addOnFailureListener{
+                                        Toast.makeText(context, "Error al obtener la categoría", Toast.LENGTH_SHORT).show()
+                                    }
+                            } else {
+                                Toast.makeText(context, "No se ha encontrado el equipo al que pertenece la categoría", Toast.LENGTH_SHORT).show()
+                            }
+                        }.addOnFailureListener {
+                            Toast.makeText(context, "Error al obtener el equipo al que pertenece la categoría", Toast.LENGTH_SHORT).show()
+                        }
+                        showDeleteConfirmationDialog = false // Ocultar el diálogo
+                    }) {
+                        Text("Eliminar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showDeleteConfirmationDialog = false // Ocultar el diálogo
+                    }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
         }
     }
 }
