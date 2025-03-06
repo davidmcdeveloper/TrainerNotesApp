@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
@@ -37,6 +36,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -45,10 +46,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -56,9 +60,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.davidmcdeveloper.trainernotes10.R
-import com.google.firebase.firestore.FirebaseFirestore
 import com.davidmcdeveloper.trainernotes10.dataclass.Jugador
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -68,35 +73,39 @@ import java.util.UUID
 @Composable
 fun AddJugadorScreen(navController: NavController, categoryName: String, db: FirebaseFirestore) {
     val context = LocalContext.current
-    //Variables
     var nombre by remember { mutableStateOf("") }
     var primerApellido by remember { mutableStateOf("") }
+    //Fecha de Nacimiento
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+    var fechaNacimiento by remember { mutableStateOf("") }
+    val selectedDate = remember {
+        datePickerState.selectedDateMillis?.let { convertMillisToDate(it) } ?: ""
+    }
+    //ExposedDropdownMenuBox
     //Posicion Primaria
+    var posicionPrimariaOptions =
+        listOf("1ª Línea", "2ª Línea","Talona", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
     var posicionPrimariaExpanded by remember { mutableStateOf(false) }
     var posicionPrimariaSelectedText by remember { mutableStateOf("") }
-    val posicionPrimariaOptions =
-        listOf("Primera Línea", "Segunda Línea", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
     //Posicion Secundaria
+    var posicionSecundariaOptions =
+        listOf("1ª Línea", "2ª Línea","Talona", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
     var posicionSecundariaExpanded by remember { mutableStateOf(false) }
     var posicionSecundariaSelectedText by remember { mutableStateOf("") }
-    val posicionSecundariaOptions =
-        listOf("Primera Línea", "Segunda Línea", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
     //Peso
+    var pesoOptions =
+        (50..200).map { it.toString() + " kg" } // Rango de 50 a 200 kg
     var pesoExpanded by remember { mutableStateOf(false) }
     var pesoSelectedText by remember { mutableStateOf("") }
-    val pesoOptions = (25..200).map { it.toString() + " kg" } // Rango de 25 a 200 kg
     //Altura
+    var alturaOptions =
+        (110..220).map { (it.toFloat() / 100).toString() + " m" } // Rango de 1.10 a 2.20 m
     var alturaExpanded by remember { mutableStateOf(false) }
     var alturaSelectedText by remember { mutableStateOf("") }
-    val alturaOptions = (50..220).map { (it.toFloat() / 100).toString() + " m" } // Rango de 0.50 a 2.20 m
-    //Fecha de nacimiento
-    var showDatePicker by remember { mutableStateOf(false) }
-    var fechaNacimiento by remember { mutableStateOf("") }
-    //DatePicker
-    val datePickerState = rememberDatePickerState()
-    val selectedDate = datePickerState.selectedDateMillis?.let {
-        convertMillisToDate(it)
-    } ?: ""
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -126,6 +135,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Añadir Jugador") },
@@ -151,11 +161,11 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
             verticalArrangement = Arrangement.Top
         ) {
             //Añadir Foto
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp)) //Reducimos el spacer.
             //AÑADIMOS BOX PARA SUPERPONER ELEMENTOS
             Box(
                 modifier = Modifier
-                    .size(150.dp)
+                    .size(100.dp) //Reducimos el tamaño.
             ) {
                 //IMAGEN DEL JUGADOR
                 if (jugadorImageUri != null) {
@@ -169,11 +179,12 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                     )
                 } else { //Muestra la foto por defecto
                     Image(
-                        painter = painterResource(id = R.drawable.defaultteam),
+                        painter = painterResource(id = R.drawable.jugadordefault),
                         contentDescription = "Añadir Foto",
                         modifier = Modifier
                             .fillMaxSize()
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .alpha(0.8f),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -181,11 +192,17 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                 Button(
                     onClick = { launcher.launch("image/*") },
                     modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
                         .align(Alignment.BottomEnd)
-                        .padding(bottom = 4.dp)
-                        .size(30.dp)
+                        .alpha(0.0f),
+
+
                 ) {
-                    Icon(Icons.Filled.AddCircle, contentDescription = "Añadir imagen")
+                    Icon(Icons.Filled.AddCircle,
+                        contentDescription = "Añadir imagen",
+                        tint = Color.Black,
+                    )
                 }
             }
             //Formulario
@@ -199,7 +216,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                     label = { Text("Nombre") },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(16.dp)
+                        .padding(8.dp) //Reducimos el padding.
                 )
                 OutlinedTextField(
                     value = primerApellido,
@@ -207,7 +224,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                     label = { Text("Primer Apellido") },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(16.dp)
+                        .padding(8.dp) //Reducimos el padding.
                 )
             }
             //POSICION PRIMARIA Y SECUNDARIA EN FILA
@@ -221,7 +238,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                     onExpandedChange = { posicionPrimariaExpanded = !posicionPrimariaExpanded },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(16.dp)
+                        .padding(8.dp) //Reducimos el padding.
                 ) {
                     OutlinedTextField(
                         value = posicionPrimariaSelectedText,
@@ -229,7 +246,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = posicionPrimariaExpanded) },
                         modifier = Modifier.menuAnchor(),
-                        label = { Text("Posicion Primaria") }
+                        label = { Text("1ª Posición") }
                     )
                     //Este es el código del desplegable
                     DropdownMenu(
@@ -254,7 +271,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                     onExpandedChange = { posicionSecundariaExpanded = !posicionSecundariaExpanded },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(16.dp)
+                        .padding(8.dp) //Reducimos el padding.
                 ) {
                     OutlinedTextField(
                         value = posicionSecundariaSelectedText,
@@ -262,7 +279,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                         readOnly = true,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = posicionSecundariaExpanded) },
                         modifier = Modifier.menuAnchor(),
-                        label = { Text("Posicion Secundaria") }
+                        label = { Text("2ª Posición") }
                     )
                     //Este es el código del desplegable
                     DropdownMenu(
@@ -292,7 +309,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                     onExpandedChange = { pesoExpanded = !pesoExpanded },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(16.dp)
+                        .padding(8.dp) //Reducimos el padding.
                 ) {
                     OutlinedTextField(
                         value = pesoSelectedText,
@@ -325,7 +342,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                     onExpandedChange = { alturaExpanded = !alturaExpanded },
                     modifier = Modifier
                         .weight(1f)
-                        .padding(16.dp)
+                        .padding(8.dp) //Reducimos el padding.
                 ) {
                     OutlinedTextField(
                         value = alturaSelectedText,
@@ -361,7 +378,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                 label = { Text(text = "Fecha de Nacimiento") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(8.dp) //Reducimos el padding.
                     .clickable { showDatePicker = true },
                 trailingIcon = {
                     Icon(
@@ -371,11 +388,13 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                     )
                 }
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp)) //Reducimos el spacer.
             Button(onClick = {
                 //Comprobamos los datos
                 if (nombre.isEmpty() || primerApellido.isEmpty() || posicionPrimariaSelectedText.isEmpty() || posicionSecundariaSelectedText.isEmpty() || pesoSelectedText.isEmpty() || alturaSelectedText.isEmpty()) {
-                    Toast.makeText(context, "Debes rellenar todos los campos", Toast.LENGTH_SHORT).show()
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Debes rellenar todos los campos")
+                    }
                 } else {
                     val idJugador = generateJugadorId(nombre, primerApellido)
                     //Si la jugadorImageUri no es nula, subimos la foto a Firebase
@@ -423,7 +442,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
             },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)) {
+                    .padding(8.dp)) { //Reducimos el padding.
                 Text("Guardar Jugador")
             }
         }
