@@ -1,9 +1,10 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
-import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,32 +46,37 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
+import com.davidmcdeveloper.trainernotes10.utils.getEquipoCategories
+import com.davidmcdeveloper.trainernotes10.utils.deleteJugadoresByCategory
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TeamDetailsScreen(
-    navController: NavController,
-    db: FirebaseFirestore,
-    teamId: String
-) {
+fun TeamDetailsScreen(navController: NavController, db: FirebaseFirestore, teamId: String) {
     val context = LocalContext.current
-    var isLoading by remember { mutableStateOf(true) }
-    var isDeleting by remember { mutableStateOf(false) }
-    var showDeleteConfirmationDialog by remember { mutableStateOf(false) } // Estado para el diálogo
     var imageUrl by remember { mutableStateOf("") }
-    var teamName by remember { mutableStateOf("")}
+    var teamName by remember { mutableStateOf("") }
     var categories by remember { mutableStateOf<List<String>>(emptyList()) }
+    var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
+    var isCategoryLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(key1 = teamId) {
         val teamDocument = db.collection("equipos").document(teamId).get().await()
         if (teamDocument.exists()) {
             imageUrl = teamDocument.getString("imagenUrl") ?: ""
-            teamName = teamDocument.getString("nombre") ?: "" //Obtenemos el nombre.
+            teamName = teamDocument.getString("nombre") ?: ""
         } else {
-            Toast.makeText(context, "No se han encontrado los detalles del equipo", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                context,
+                "No se han encontrado los detalles del equipo",
+                Toast.LENGTH_SHORT
+            ).show()
         }
         isLoading = false
     }
@@ -77,7 +84,6 @@ fun TeamDetailsScreen(
         db.collection("equipos").document(teamId)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) {
-                    Log.w("DetailsScreen", "Listen failed.", e)
                     return@addSnapshotListener
                 }
                 if (snapshot != null && snapshot.exists()) {
@@ -91,27 +97,40 @@ fun TeamDetailsScreen(
                         }
                     }
                 } else {
-                    Log.d("DetailsScreen", "Current data: null")
                     categories = emptyList()
                 }
+                isCategoryLoading = false
             }
     }
+
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                navController.navigate(Screen.AddCategory.createRoute(teamId)) //Pasamos el ID.
-            }) {
-                Icon(Icons.Filled.Add, contentDescription = "Añadir categoría")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                FloatingActionButton(onClick = { navController.popBackStack() }, //Se ha cambiado.
+                    modifier = Modifier
+                        .padding(start = 30.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver al listado de equipos")
+                }
+
+                FloatingActionButton(onClick = {
+                    navController.navigate(Screen.AddCategory.createRoute(teamId))
+                }) {
+                    Icon(Icons.Filled.Add, contentDescription = "Añadir categoría")
+                }
             }
+
         },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(teamName) }, //Mostramos el nombre.
+                title = { Text(teamName) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate("home") }) {
+                    IconButton(onClick = { navController.popBackStack() }) { //Se ha cambiado.
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver a la lista de equipos"
@@ -119,7 +138,7 @@ fun TeamDetailsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {showDeleteConfirmationDialog = true}) {
+                    IconButton(onClick = { showDeleteConfirmationDialog = true }) {
                         Icon(Icons.Filled.Delete, contentDescription = "Eliminar equipo")
                     }
                 }
@@ -131,7 +150,7 @@ fun TeamDetailsScreen(
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            if (isLoading || isDeleting) {
+            if (isLoading || isDeleting || isCategoryLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 Column(
@@ -148,27 +167,33 @@ fun TeamDetailsScreen(
                         contentScale = ContentScale.Crop
                     )
                     Spacer(modifier = Modifier.height(32.dp))
-
-                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        items(categories) { categoryName -> //Ahora recibimos el nombre.
-                            Button(
-                                onClick = {
-                                    navController.navigate(Screen.CategoryHome.createRoute(categoryName)) //Pasamos el nombre
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                shape = RoundedCornerShape(16.dp)
-                            ) {
-                                Text(text = categoryName) //Mostramos el nombre.
+                    if (categories.isNotEmpty()) {
+                        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                            items(categories) { categoryName ->
+                                Button(
+                                    onClick = {
+                                        navController.navigate(
+                                            Screen.CategoryHome.createRoute(
+                                                categoryName
+                                            )
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Text(text = categoryName)
+                                }
                             }
                         }
+                    } else {
+                        Text(text = "Aun no hay categorías creadas para este equipo")
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-
             }
-            // Dialogo de confirmacion
+            // Diálogo de confirmación
             if (showDeleteConfirmationDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteConfirmationDialog = false },
@@ -183,73 +208,37 @@ fun TeamDetailsScreen(
                     confirmButton = {
                         TextButton(onClick = {
                             isDeleting = true
-                            val teamRef = db.collection("equipos").document(teamId)
-                            val storageRef = FirebaseStorage.getInstance()
-                                .getReferenceFromUrl(imageUrl)
-                            val categoriesRef = teamRef.collection("categorias")
-
-                            categoriesRef.get()
-                                .addOnSuccessListener { querySnapshot ->
-                                    val deleteCategoryTasks =
-                                        mutableListOf<com.google.android.gms.tasks.Task<Void>>()
-
-                                    for (document in querySnapshot.documents) {
-                                        deleteCategoryTasks.add(document.reference.delete())
-                                    }
-
-                                    com.google.android.gms.tasks.Tasks.whenAll(deleteCategoryTasks)
-                                        .addOnSuccessListener {
-                                            storageRef.delete()
-                                                .addOnSuccessListener {
-                                                    teamRef.delete()
-                                                        .addOnSuccessListener {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Equipo y categorías eliminados correctamente",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                            navController.navigate("home") {
-                                                                popUpTo("home") { inclusive = true }
-                                                            }
-                                                        }
-                                                        .addOnFailureListener {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Error al eliminar el equipo",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        }
-                                                }
-                                                .addOnFailureListener {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Error al eliminar la imagen del equipo",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                        }
-                                        .addOnFailureListener {
-                                            Toast.makeText(
-                                                context,
-                                                "Error al eliminar las categorías del equipo",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
+                            scope.launch {
+                                val teamCategories =
+                                    getEquipoCategories(db, teamId) //Obtenemos las categorias del equipo.
+                                for (categoryName in teamCategories) {
+                                    deleteJugadoresByCategory(
+                                        db,
+                                        categoryName,
+                                        context
+                                    ) //Borramos los jugadores de cada categoría.
                                 }
-                                .addOnFailureListener {
-                                    Toast.makeText(
-                                        context,
-                                        "Error al obtener las categorías del equipo",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    isDeleting = false
+                                val teamRef = db.collection("equipos").document(teamId) //Borramos las categorias.
+                                teamRef.collection("categorias").get().await().documents.forEach {
+                                    it.reference.delete()
                                 }
-                                .addOnCompleteListener { isDeleting = false }
+
+                                val storageRef =
+                                    FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl)
+                                storageRef.delete().await() //Eliminamos la foto del equipo.
+                                teamRef.delete().await() //Eliminamos el equipo.
+                                Toast.makeText(
+                                    context,
+                                    "Equipo y categorías eliminados correctamente",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                navController.popBackStack() //Se ha cambiado.
+                            }
                             showDeleteConfirmationDialog = false
                         }) {
-                            if (isDeleting){
+                            if (isDeleting) {
                                 CircularProgressIndicator()
-                            }else{
+                            } else {
                                 Text("Eliminar")
                             }
                         }

@@ -26,19 +26,23 @@ sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Login : Screen("login")
     object AddTeam : Screen("add_team")
-    object AddCategory: Screen("addCategory/{$ARG_TEAM_ID}"){
+    object AddCategory : Screen("addCategory/{$ARG_TEAM_ID}") {
         fun createRoute(teamId: String) = "addCategory/$teamId"
     }
+
     object TeamDetails : Screen("team_details/{$ARG_TEAM_ID}") {
         fun createRoute(teamId: String) = "team_details/$teamId"
     }
-    object CategoryHome: Screen("categoryHome/{$ARG_CATEGORY_NAME}"){
+
+    object CategoryHome : Screen("categoryHome/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "categoryHome/$categoryName"
     }
-    object Jugadores: Screen("jugadores/{$ARG_CATEGORY_NAME}"){
+
+    object Jugadores : Screen("jugadores/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "jugadores/$categoryName"
     }
-    object AddJugador: Screen("addJugador/{$ARG_CATEGORY_NAME}"){
+
+    object AddJugador : Screen("addJugador/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "addJugador/$categoryName"
     }
 }
@@ -62,8 +66,9 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             arguments = listOf(
                 navArgument(ARG_TEAM_ID) { type = NavType.StringType } // Modificamos el argumento.
             )
-        ){ backStackEntry ->
-            val teamId = backStackEntry.arguments?.getString(ARG_TEAM_ID) ?: "" //Lo obtenemos de forma correcta.
+        ) { backStackEntry ->
+            val teamId = backStackEntry.arguments?.getString(ARG_TEAM_ID)
+                ?: "" //Lo obtenemos de forma correcta.
             TeamDetailsScreen(navController = navController, teamId = teamId, db = db)
         }
         composable(
@@ -72,7 +77,8 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
                 navArgument(ARG_TEAM_ID) { type = NavType.StringType } // Modificamos el argumento.
             )
         ) { backStackEntry ->
-            val teamId = backStackEntry.arguments?.getString(ARG_TEAM_ID) ?: "" //Lo obtenemos de forma correcta.
+            val teamId = backStackEntry.arguments?.getString(ARG_TEAM_ID)
+                ?: "" //Lo obtenemos de forma correcta.
             AddCategoryScreen(navController = navController, teamId = teamId, db = db)
         }
         composable(
@@ -89,7 +95,7 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             arguments = listOf(
                 navArgument(ARG_CATEGORY_NAME) { type = NavType.StringType }
             )
-        ){ backStackEntry ->
+        ) { backStackEntry ->
             val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
             JugadoresScreen(navController = navController, categoryName = categoryName, db = db)
         }
@@ -98,7 +104,7 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             arguments = listOf(
                 navArgument(ARG_CATEGORY_NAME) { type = NavType.StringType }
             )
-        ){ backStackEntry ->
+        ) { backStackEntry ->
             val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
             AddJugadorScreen(navController = navController, categoryName = categoryName, db = db)
         }

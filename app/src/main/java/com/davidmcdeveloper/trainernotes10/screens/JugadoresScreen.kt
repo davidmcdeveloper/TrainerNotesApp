@@ -26,10 +26,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -59,6 +62,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.davidmcdeveloper.trainernotes10.dataclass.Jugador
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -73,6 +77,7 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
     var isDeleting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    //Se unifica en un LaunchedEffect la llamada de datos.
     LaunchedEffect(key1 = categoryName) {
         teamName = getEquipoName(db, categoryName, context)
         imageUrl = getEquipoImageUrl(db, teamName, context)
@@ -140,9 +145,14 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
                 )
                 Spacer(modifier = Modifier.height(32.dp))
                 if (jugadores.isNotEmpty()) {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) { //Modificacion
-                        items(jugadores) { jugador ->
-                            JugadorCard(jugador = jugador)
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(jugadores, key = { it.id }) { jugador ->
+                            JugadorCard(jugador = jugador, onJugadorDeleted = {
+                                scope.launch {
+                                    deleteJugador(db, jugador.id, context)
+                                    jugadores = getJugadoresByCategoria(db, categoryName, context) //Se actualiza la variable.
+                                }
+                            })
                         }
                     }
                 } else {
@@ -166,6 +176,7 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
                             isDeleting = true
                             scope.launch {
                                 deleteJugadoresByCategory(db, categoryName, context)
+                                jugadores = getJugadoresByCategoria(db, categoryName, context) //Se actualiza la variable.
                                 isDeleting = false
                             }
                             showDeleteConfirmationDialog = false
@@ -191,10 +202,11 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
 }
 
 @Composable
-fun JugadorCard(jugador: Jugador) {
+fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) } // Estado para el menú desplegable
     Card(modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 8.dp)) { //Modificado
+        .padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -222,13 +234,38 @@ fun JugadorCard(jugador: Jugador) {
             }
 
             Spacer(modifier = Modifier.padding(16.dp))
-            Column() {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = "${jugador.nombre} ${jugador.primerApellido}")
                 Text(text = "Posiciones: ${jugador.posicionPrimaria}, ${jugador.posicionSecundaria}")
             }
+
+            // Botón de más opciones
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = "Más opciones")
+                }
+
+                // Menú desplegable
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Eliminar") },
+                        onClick = {
+                            onJugadorDeleted()
+                            expanded = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = "Eliminar"
+                            )
+                        })
+                }
+            }
         }
     }
-
 }
 
 suspend fun getEquipoName(db: FirebaseFirestore, categoryName: String, context: Context): String {
@@ -291,16 +328,46 @@ suspend fun getJugadoresByCategoria(db: FirebaseFirestore, categoryName: String,
     }
 }
 
-suspend fun deleteJugadoresByCategory(db: FirebaseFirestore, categoryName: String, context: Context) {
-    val jugadoresRef = db.collection("jugadores").whereEqualTo("categoria", categoryName)
+suspend fun deleteJugadoresByCategory(
+    db: FirebaseFirestore,
+    categoryName: String,
+    context: Context
+) {
+    val jugadoresRef = db.collection("jugadores")
+        .whereEqualTo("categoria", categoryName)
     try {
         val querySnapshot = jugadoresRef.get().await()
         for (document in querySnapshot.documents) {
-            db.collection("jugadores").document(document.id).delete().await()
+            val fotoUrl = document.getString("fotoUrl") ?: ""
+
+            if (fotoUrl.isNotEmpty()) {
+                val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(fotoUrl)
+                storageRef.delete().await() // Eliminar la foto del storage.
+            }
+            db.collection("jugadores").document(document.id).delete().await() // Eliminar el jugador.
         }
         Toast.makeText(context, "Jugadores eliminados correctamente", Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
         Toast.makeText(context, "Error al eliminar jugadores", Toast.LENGTH_SHORT).show()
+    }
+}
+
+suspend fun deleteJugador(db: FirebaseFirestore, id: String, context: Context) {
+    val jugadorRef = db.collection("jugadores").document(id)
+    try {
+        val jugadorSnapshot = jugadorRef.get().await()
+        if (jugadorSnapshot.exists()) {
+            val fotoUrl = jugadorSnapshot.getString("fotoUrl") ?: ""
+
+            if (fotoUrl.isNotEmpty()) {
+                val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(fotoUrl)
+                storageRef.delete().await() //Eliminar la foto del storage.
+            }
+            jugadorRef.delete().await() //Eliminar el jugador.
+            Toast.makeText(context, "Jugador eliminado correctamente", Toast.LENGTH_SHORT).show()
+        }
+    } catch (e: Exception) {
+        Toast.makeText(context, "Error al eliminar jugador", Toast.LENGTH_SHORT).show()
     }
 }
 
