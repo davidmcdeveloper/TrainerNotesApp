@@ -1,5 +1,6 @@
 package com.davidmcdeveloper.trainernotes10.navigation
 
+import AsistenciasScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -10,6 +11,7 @@ import com.davidmcdeveloper.trainernotes10.screens.AddCategoryScreen
 import com.davidmcdeveloper.trainernotes10.screens.AddJugadorScreen
 import com.davidmcdeveloper.trainernotes10.screens.AddTeamScreen
 import com.davidmcdeveloper.trainernotes10.screens.CategoryHomeScreen
+import com.davidmcdeveloper.trainernotes10.screens.HistorialScreen
 import com.davidmcdeveloper.trainernotes10.screens.HomeScreen
 import com.davidmcdeveloper.trainernotes10.screens.JugadoresScreen
 import com.davidmcdeveloper.trainernotes10.screens.LoginScreen
@@ -45,6 +47,15 @@ sealed class Screen(val route: String) {
     object AddJugador : Screen("addJugador/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "addJugador/$categoryName"
     }
+
+    object Asistencias : Screen("asistencias/{$ARG_CATEGORY_NAME}") {
+        fun createRoute(categoryName: String) = "asistencias/$categoryName"
+    }
+    object Historial : Screen("historial/{$ARG_CATEGORY_NAME}",
+        ) {
+        fun createRoute(categoryName: String) = "historial/$categoryName"
+    }
+
 }
 
 @Composable
@@ -108,7 +119,22 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
             AddJugadorScreen(navController = navController, categoryName = categoryName, db = db)
         }
-
+        composable(
+            route = Screen.Asistencias.route,
+            arguments = listOf(
+                navArgument(ARG_CATEGORY_NAME) { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
+            AsistenciasScreen(navController = navController, categoryName = categoryName, db = db)
+        }
+        composable(
+            route = Screen.Historial.route,
+            arguments = listOf(navArgument(ARG_CATEGORY_NAME) { type = NavType.StringType })
+        ) { backStackEntry ->
+            val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
+            HistorialScreen(navController = navController, categoryName = categoryName, db = db)
+        }
     }
 }
 

@@ -152,7 +152,7 @@ fun CategoryHomeScreen(navController: NavController, categoryName: String, db: F
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Button(onClick = {
-                        Toast.makeText(context, "Has pulsado Asistencias", Toast.LENGTH_SHORT).show()
+                        navController.navigate(Screen.Asistencias.createRoute(categoryName))
                     },
                         modifier = Modifier
                             .fillMaxWidth()
