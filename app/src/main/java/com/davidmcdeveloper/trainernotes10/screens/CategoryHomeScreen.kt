@@ -46,7 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
+import com.davidmcdeveloper.trainernotes10.utils.deleteJugadoresByCategory
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -60,6 +63,7 @@ fun CategoryHomeScreen(navController: NavController, categoryName: String, db: F
     var teamName by remember { mutableStateOf("") }
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
+    var isImageLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
     // LaunchedEffect unificado para obtener teamName e imageUrl
@@ -132,14 +136,31 @@ fun CategoryHomeScreen(navController: NavController, categoryName: String, db: F
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "Escudo del equipo",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp),
-                    contentScale = ContentScale.Crop
-                )
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Escudo del equipo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        onLoading = {
+                            isImageLoading = true
+                        },
+                        onSuccess = {
+                            isImageLoading = false
+                        },
+                        onError = {
+                            isImageLoading = false
+                        }
+                    )
+                    if (isImageLoading) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                }
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
                     text = "¡Bienvenido a $categoryName!",

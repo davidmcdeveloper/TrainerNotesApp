@@ -3,6 +3,7 @@ package com.davidmcdeveloper.trainernotes10.screens
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -38,12 +40,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.davidmcdeveloper.trainernotes10.dataclass.Equipo
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.auth.FirebaseAuth
@@ -112,14 +116,28 @@ fun HomeScreen(navController: NavController) {
                                     .fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(equipo.imagenUrl),
-                                    contentDescription = "Escudo del equipo",
-                                    modifier = Modifier
-                                        .size(80.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
+                                var isLoading by remember { mutableStateOf(true) }
+                                Box(modifier = Modifier.size(80.dp)) {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(
+                                            model = ImageRequest.Builder(LocalContext.current)
+                                                .data(equipo.imagenUrl)
+                                                .crossfade(true)
+                                                .build(),
+                                            onLoading = { isLoading = true },
+                                            onSuccess = { isLoading = false },
+                                            onError = { isLoading = false }
+                                        ),
+                                        contentDescription = "Escudo del equipo",
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    if (isLoading) {
+                                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                                    }
+                                }
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text(
                                     text = equipo.nombre,

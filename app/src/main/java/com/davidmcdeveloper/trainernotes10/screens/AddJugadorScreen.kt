@@ -79,9 +79,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
     var fechaNacimiento by remember { mutableStateOf("") }
-    val selectedDate = remember {
-        datePickerState.selectedDateMillis?.let { convertMillisToDate(it) } ?: ""
-    }
+
     //ExposedDropdownMenuBox
     //Posicion Primaria
     var posicionPrimariaOptions =
@@ -111,7 +109,9 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    fechaNacimiento = selectedDate
+                    datePickerState.selectedDateMillis?.let { //Cogemos el millis
+                        fechaNacimiento = convertMillisToDate(it)
+                    }
                     showDatePicker = false
                 }) {
                     Text("Confirmar")
@@ -198,7 +198,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                         .alpha(0.0f),
 
 
-                ) {
+                    ) {
                     Icon(Icons.Filled.AddCircle,
                         contentDescription = "Añadir imagen",
                         tint = Color.Black,
@@ -417,8 +417,8 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                                 categoryName,
                                 jugadorImageUrl,
                                 context,
-                                navController
                             )
+                            navController.popBackStack()
                         }
                     } else {
                         //En caso de que no haya imagen, subimos los datos sin la foto
@@ -435,8 +435,8 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                             categoryName,
                             "", // Aquí se pasa una cadena vacía porque no hay imagen
                             context,
-                            navController
                         )
+                        navController.popBackStack()
                     }
                 }
             },
@@ -488,7 +488,6 @@ fun saveJugadorToFirestore(
     categoryName: String,
     jugadorImageUrl: String,
     context: Context,
-    navController: NavController
 ) {
     val jugador = Jugador(
         id = id,
@@ -505,7 +504,6 @@ fun saveJugadorToFirestore(
     db.collection("jugadores").document(id).set(jugador)
         .addOnSuccessListener {
             Toast.makeText(context, "Jugador añadido correctamente", Toast.LENGTH_SHORT).show()
-            navController.popBackStack()
         }
         .addOnFailureListener {
             Toast.makeText(context, "Error al añadir jugador", Toast.LENGTH_SHORT).show()

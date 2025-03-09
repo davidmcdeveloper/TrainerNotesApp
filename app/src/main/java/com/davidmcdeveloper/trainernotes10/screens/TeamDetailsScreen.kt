@@ -45,6 +45,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.davidmcdeveloper.trainernotes10.utils.getEquipoCategories
 import com.davidmcdeveloper.trainernotes10.utils.deleteJugadoresByCategory
@@ -64,6 +66,7 @@ fun TeamDetailsScreen(navController: NavController, db: FirebaseFirestore, teamI
     var isDeleting by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
     var isCategoryLoading by remember { mutableStateOf(true) }
+    var isImageLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(key1 = teamId) {
@@ -158,14 +161,31 @@ fun TeamDetailsScreen(navController: NavController, db: FirebaseFirestore, teamI
                         .fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = "Escudo del equipo",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp),
-                        contentScale = ContentScale.Crop
-                    )
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(imageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Escudo del equipo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                            onLoading = {
+                                isImageLoading = true
+                            },
+                            onSuccess = {
+                                isImageLoading = false
+                            },
+                            onError = {
+                                isImageLoading = false
+                            }
+                        )
+                        if (isImageLoading) {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        }
+                    }
                     Spacer(modifier = Modifier.height(32.dp))
                     if (categories.isNotEmpty()) {
                         LazyColumn(modifier = Modifier.fillMaxWidth()) {

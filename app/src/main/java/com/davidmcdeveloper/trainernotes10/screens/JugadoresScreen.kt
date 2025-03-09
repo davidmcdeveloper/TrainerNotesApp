@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.davidmcdeveloper.trainernotes10.dataclass.Jugador
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.firestore.FirebaseFirestore
@@ -75,6 +76,7 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
     var jugadores by remember { mutableStateOf<List<Jugador>>(emptyList()) }
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
+    var isImageLoading by remember { mutableStateOf(true) } //Estado de la imagen del equipo.
     val scope = rememberCoroutineScope()
 
     //Se unifica en un LaunchedEffect la llamada de datos.
@@ -135,14 +137,31 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "Escudo del equipo",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp),
-                    contentScale = ContentScale.Crop
-                )
+                Box(modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Escudo del equipo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        onLoading = {
+                            isImageLoading = true
+                        },
+                        onSuccess = {
+                            isImageLoading = false
+                        },
+                        onError = {
+                            isImageLoading = false
+                        }
+                    )
+                    if (isImageLoading) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
+                }
                 Spacer(modifier = Modifier.height(32.dp))
                 if (jugadores.isNotEmpty()) {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -204,6 +223,7 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
 @Composable
 fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit) {
     var expanded by remember { mutableStateOf(false) } // Estado para el menú desplegable
+    var isImageLoading by remember { mutableStateOf(true) } //Estado de la imagen de los jugadores.
     Card(modifier = Modifier
         .fillMaxWidth()
         .padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -213,24 +233,45 @@ fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (jugador.fotoUrl.isNotEmpty()) {
-                Image(
-                    painter = rememberAsyncImagePainter(jugador.fotoUrl),
-                    contentDescription = "Foto del jugador",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Image(
-                    painter = rememberAsyncImagePainter(com.davidmcdeveloper.trainernotes10.R.drawable.defaultteam),
-                    contentDescription = "Foto Jugador",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
+            Box(modifier = Modifier.size(60.dp)) {
+                if (jugador.fotoUrl.isNotEmpty()) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(jugador.fotoUrl)
+                                .crossfade(true)
+                                .build(),
+                            onLoading = { isImageLoading = true },
+                            onSuccess = { isImageLoading = false },
+                            onError = { isImageLoading = false }
+                        ),
+                        contentDescription = "Foto del jugador",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(com.davidmcdeveloper.trainernotes10.R.drawable.defaultteam)
+                                .crossfade(true)
+                                .build(),
+                            onLoading = { isImageLoading = true },
+                            onSuccess = { isImageLoading = false },
+                            onError = { isImageLoading = false }
+                        ),
+                        contentDescription = "Foto Jugador",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                if (isImageLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
             }
 
             Spacer(modifier = Modifier.padding(16.dp))

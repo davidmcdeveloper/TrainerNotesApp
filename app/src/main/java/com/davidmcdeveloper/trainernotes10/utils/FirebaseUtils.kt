@@ -6,6 +6,7 @@ import android.widget.Toast
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.tasks.await
+import kotlin.text.set
 
 suspend fun getEquipoCategories(db: FirebaseFirestore, teamId: String): List<String> {
     val teamDocument = db.collection("equipos").document(teamId).get().await()
@@ -38,5 +39,42 @@ suspend fun deleteJugadoresByCategory(
         }
     } catch (e: Exception) {
         Toast.makeText(context, "Error al eliminar jugadores: $e", Toast.LENGTH_SHORT).show()
+    }
+}
+//Función para añadir un jugador a Firestore (Mantenemos suspend)
+suspend fun addJugadorToFirestore(
+    db: FirebaseFirestore,
+    id: String,
+    nombre: String,
+    primerApellido: String,
+    posicionPrimaria: String,
+    posicionSecundaria: String,
+    peso: String,
+    altura: String,
+    fechaNacimiento: String,
+    fotoUrl: String,
+    categoria: String,
+    context: Context,
+
+) {
+    val jugador = hashMapOf(
+        "id" to id,
+        "nombre" to nombre,
+        "primerApellido" to primerApellido,
+        "fechaNacimiento" to fechaNacimiento,
+        "posicionPrimaria" to posicionPrimaria,
+        "posicionSecundaria" to posicionSecundaria,
+        "peso" to peso,
+        "altura" to altura,
+        "fotoUrl" to fotoUrl,
+        "categoria" to categoria)
+    db.collection("jugadores").document(id).set(jugador).addOnCompleteListener{ task ->
+        if (task.isSuccessful){
+            Toast.makeText(context, "Jugador Añadido correctamente", Toast.LENGTH_SHORT).show()
+            //Eliminamos la navegacion para no tener problemas.
+            //navController.popBackStack()
+        }else{
+            Toast.makeText(context, "Error al añadir jugador", Toast.LENGTH_SHORT).show()
+        }
     }
 }
