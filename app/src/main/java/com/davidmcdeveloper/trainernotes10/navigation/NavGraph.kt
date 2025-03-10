@@ -11,6 +11,7 @@ import com.davidmcdeveloper.trainernotes10.screens.AddCategoryScreen
 import com.davidmcdeveloper.trainernotes10.screens.AddJugadorScreen
 import com.davidmcdeveloper.trainernotes10.screens.AddTeamScreen
 import com.davidmcdeveloper.trainernotes10.screens.CategoryHomeScreen
+import com.davidmcdeveloper.trainernotes10.screens.EditJugadorScreen
 import com.davidmcdeveloper.trainernotes10.screens.HistorialScreen
 import com.davidmcdeveloper.trainernotes10.screens.HomeScreen
 import com.davidmcdeveloper.trainernotes10.screens.JugadoresScreen
@@ -23,6 +24,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 const val ARG_TEAM_NAME = "teamName"
 const val ARG_CATEGORY_NAME = "categoryName"
 const val ARG_TEAM_ID = "teamId"
+const val ARG_JUGADOR_ID = "jugadorId"
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
@@ -51,9 +53,15 @@ sealed class Screen(val route: String) {
     object Asistencias : Screen("asistencias/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "asistencias/$categoryName"
     }
-    object Historial : Screen("historial/{$ARG_CATEGORY_NAME}",
-        ) {
+    object Historial : Screen("historial/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "historial/$categoryName"
+    }
+    object EditJugador : Screen(
+        "jugador_edit/{$ARG_JUGADOR_ID}") { //Modificamos la ruta
+        fun createRoute(
+            jugadorId: String
+        ) =
+            "jugador_edit/$jugadorId"
     }
 
 }
@@ -135,6 +143,17 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
             HistorialScreen(navController = navController, categoryName = categoryName, db = db)
         }
+        composable(
+            route = Screen.EditJugador.route,
+            arguments = listOf(
+                navArgument(ARG_JUGADOR_ID) { type = NavType.StringType }, //Modificamos los argumentos.
+            )
+        ) { backStackEntry ->
+            EditJugadorScreen(
+                navController = navController,
+                db = db,
+                jugadorId = backStackEntry.arguments?.getString(ARG_JUGADOR_ID) ?: ""
+            )
+        }
     }
 }
-

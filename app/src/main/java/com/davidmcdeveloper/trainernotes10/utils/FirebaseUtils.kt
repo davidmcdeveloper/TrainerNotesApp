@@ -1,12 +1,19 @@
 package com.davidmcdeveloper.trainernotes10.utils
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.tasks.await
-import kotlin.text.set
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.UUID
+import kotlin.toString
 
 suspend fun getEquipoCategories(db: FirebaseFirestore, teamId: String): List<String> {
     val teamDocument = db.collection("equipos").document(teamId).get().await()
@@ -41,6 +48,24 @@ suspend fun deleteJugadoresByCategory(
         Toast.makeText(context, "Error al eliminar jugadores: $e", Toast.LENGTH_SHORT).show()
     }
 }
+
+//Funcion para borrar la imagen del jugador
+suspend fun deleteJugadorImage(fotoUrl: String, context: Context) {
+    Log.d("FirebaseUtils", "deleteJugadorImage: Inicio. URL: $fotoUrl")
+    if (fotoUrl.isNotEmpty()) {
+        val storageRef = FirebaseStorage.getInstance().getReferenceFromUrl(fotoUrl)
+        try {
+            Log.d("FirebaseUtils", "deleteJugadorImage: Eliminando...")
+            storageRef.delete().await() // Eliminar la foto del storage.
+            Log.d("FirebaseUtils", "deleteJugadorImage: Eliminada correctamente")
+            Toast.makeText(context, "Imagen eliminada correctamente", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e("FirebaseUtils", "deleteJugadorImage: Error al eliminar la imagen", e)
+            Toast.makeText(context, "Error al eliminar la imagen", Toast.LENGTH_SHORT).show()
+        }
+    }
+    Log.d("FirebaseUtils", "deleteJugadorImage: Fin")
+}
 //Función para añadir un jugador a Firestore (Mantenemos suspend)
 suspend fun addJugadorToFirestore(
     db: FirebaseFirestore,
@@ -56,7 +81,7 @@ suspend fun addJugadorToFirestore(
     categoria: String,
     context: Context,
 
-) {
+    ) {
     val jugador = hashMapOf(
         "id" to id,
         "nombre" to nombre,
@@ -68,13 +93,49 @@ suspend fun addJugadorToFirestore(
         "altura" to altura,
         "fotoUrl" to fotoUrl,
         "categoria" to categoria)
-    db.collection("jugadores").document(id).set(jugador).addOnCompleteListener{ task ->
-        if (task.isSuccessful){
-            Toast.makeText(context, "Jugador Añadido correctamente", Toast.LENGTH_SHORT).show()
-            //Eliminamos la navegacion para no tener problemas.
-            //navController.popBackStack()
-        }else{
-            Toast.makeText(context, "Error al añadir jugador", Toast.LENGTH_SHORT).show()
-        }
+    try {
+        db.collection("jugadores").document(id).set(jugador).await() //Usamos await()
+        Toast.makeText(context, "Jugador Añadido correctamente", Toast.LENGTH_SHORT).show()
+    } catch (e: Exception) {
+        Toast.makeText(context, "Error al añadir jugador", Toast.LENGTH_SHORT).show()
+    }
+}
+//Funciones de utilidad para convertir entre fechas y milisegundos
+fun convertMillisToDate(millis: Long): String {
+    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = millis
+    return formatter.format(calendar.time)
+}
+fun convertDateToMillis(dateString: String): Long {
+    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val date = formatter.parse(dateString)
+    val calendar = Calendar.getInstance()
+    calendar.time = date!!
+    return calendar.timeInMillis
+}
+
+//Funcion para subir la imagen a Firebase Storage
+suspend fun uploadImageToFirebaseStorage(imageUri: Uri, jugadorId: String, context: Context): String {
+    Log.d("FirebaseUtils", "uploadImageToFirebaseStorage: Inicio. URI: $imageUri, JugadorId: $jugadorId")
+    val storageRef = Firebase.storage.reference
+    //Usamos el id del jugador como nombre de la imagen, junto con un id unico.
+    val imageFileName = "${jugadorId}_${UUID.randomUUID()}"
+    val imageRef = storageRef.child("images/jugadores/$imageFileName")
+    Log.d("FirebaseUtils", "uploadImageToFirebaseStorage: Preparando subida...")
+    return try {
+        Log.d("FirebaseUtils", "uploadImageToFirebaseStorage: Subiendo...")
+        imageRef.putFile(imageUri).await()
+        Log.d("FirebaseUtils", "uploadImageToFirebaseStorage: Subida completada")
+        Log.d("FirebaseUtils", "uploadImageToFirebaseStorage: Obteniendo URL...")
+        val downloadUrl = imageRef.downloadUrl.await()
+        Log.d("FirebaseUtils", "uploadImageToFirebaseStorage: URL obtenida: $downloadUrl")
+        downloadUrl.toString()
+    } catch (e: Exception) {
+        Log.e("FirebaseUtils", "uploadImageToFirebaseStorage: Error al subir imagen", e)
+        Toast.makeText(context, "Error al subir imagen", Toast.LENGTH_SHORT).show()
+        ""
+    } finally {
+        Log.d("FirebaseUtils", "uploadImageToFirebaseStorage: Fin")
     }
 }

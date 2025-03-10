@@ -1,15 +1,12 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
-import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,6 +22,7 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -59,14 +58,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.davidmcdeveloper.trainernotes10.R
-import com.davidmcdeveloper.trainernotes10.dataclass.Jugador
+import com.davidmcdeveloper.trainernotes10.utils.addJugadorToFirestore
+import com.davidmcdeveloper.trainernotes10.utils.convertMillisToDate
+import com.davidmcdeveloper.trainernotes10.utils.uploadImageToFirebaseStorage
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,12 +81,12 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
     //ExposedDropdownMenuBox
     //Posicion Primaria
     var posicionPrimariaOptions =
-        listOf("1ª Línea", "2ª Línea","Talona", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
+        listOf("1ª Línea", "2ª Línea", "Talona", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
     var posicionPrimariaExpanded by remember { mutableStateOf(false) }
     var posicionPrimariaSelectedText by remember { mutableStateOf("") }
     //Posicion Secundaria
     var posicionSecundariaOptions =
-        listOf("1ª Línea", "2ª Línea","Talona", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
+        listOf("1ª Línea", "2ª Línea", "Talona", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
     var posicionSecundariaExpanded by remember { mutableStateOf(false) }
     var posicionSecundariaSelectedText by remember { mutableStateOf("") }
     //Peso
@@ -103,6 +101,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
     var alturaSelectedText by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
         DatePickerDialog(
@@ -153,366 +152,321 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
             )
         }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-            //Añadir Foto
-            Spacer(modifier = Modifier.height(8.dp)) //Reducimos el spacer.
-            //AÑADIMOS BOX PARA SUPERPONER ELEMENTOS
-            Box(
+                .padding(paddingValues)
+                .fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
+        ){
+            LazyColumn(
                 modifier = Modifier
-                    .size(100.dp) //Reducimos el tamaño.
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                //IMAGEN DEL JUGADOR
-                if (jugadorImageUri != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(jugadorImageUri),
-                        contentDescription = "Foto Jugador",
+                item {
+                    //Añadir Foto
+                    Spacer(modifier = Modifier.height(8.dp)) //Reducimos el spacer.
+                    //AÑADIMOS BOX PARA SUPERPONER ELEMENTOS
+                    Box(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else { //Muestra la foto por defecto
-                    Image(
-                        painter = painterResource(id = R.drawable.jugadordefault),
-                        contentDescription = "Añadir Foto",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .alpha(0.8f),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-                //BOTON ADD
-                Button(
-                    onClick = { launcher.launch("image/*") },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .align(Alignment.BottomEnd)
-                        .alpha(0.0f),
+                            .size(100.dp) //Reducimos el tamaño.
+                    ) {
+                        //IMAGEN DEL JUGADOR
+                        if (jugadorImageUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(jugadorImageUri)
+                                        .crossfade(true)
+                                        .build()
+                                ),
+                                contentDescription = "Foto Jugador",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else { //Muestra la foto por defecto
+                            Image(
+                                painter = painterResource(id = R.drawable.jugadordefault),
+                                contentDescription = "Añadir Foto",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
+                                    .alpha(0.8f),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        //BOTON ADD
+                        Button(
+                            onClick = { launcher.launch("image/*") },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .align(Alignment.BottomEnd)
+                                .alpha(0.0f),
 
 
-                    ) {
-                    Icon(Icons.Filled.AddCircle,
-                        contentDescription = "Añadir imagen",
-                        tint = Color.Black,
-                    )
-                }
-            }
-            //Formulario
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text("Nombre") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp) //Reducimos el padding.
-                )
-                OutlinedTextField(
-                    value = primerApellido,
-                    onValueChange = { primerApellido = it },
-                    label = { Text("Primer Apellido") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp) //Reducimos el padding.
-                )
-            }
-            //POSICION PRIMARIA Y SECUNDARIA EN FILA
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                //Posicion Primaria
-                ExposedDropdownMenuBox(
-                    expanded = posicionPrimariaExpanded,
-                    onExpandedChange = { posicionPrimariaExpanded = !posicionPrimariaExpanded },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp) //Reducimos el padding.
-                ) {
-                    OutlinedTextField(
-                        value = posicionPrimariaSelectedText,
-                        onValueChange = { posicionPrimariaSelectedText = it },
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = posicionPrimariaExpanded) },
-                        modifier = Modifier.menuAnchor(),
-                        label = { Text("1ª Posición") }
-                    )
-                    //Este es el código del desplegable
-                    DropdownMenu(
-                        expanded = posicionPrimariaExpanded,
-                        onDismissRequest = { posicionPrimariaExpanded = false },
-                        modifier = Modifier.exposedDropdownSize()
-                    ) {
-                        posicionPrimariaOptions.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(text = item) },
-                                onClick = {
-                                    posicionPrimariaSelectedText = item
-                                    posicionPrimariaExpanded = false
-                                }
+                            ) {
+                            Icon(
+                                Icons.Filled.AddCircle,
+                                contentDescription = "Añadir imagen",
+                                tint = Color.Black,
                             )
                         }
                     }
-                }
-                //Posicion Secundaria
-                ExposedDropdownMenuBox(
-                    expanded = posicionSecundariaExpanded,
-                    onExpandedChange = { posicionSecundariaExpanded = !posicionSecundariaExpanded },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp) //Reducimos el padding.
-                ) {
-                    OutlinedTextField(
-                        value = posicionSecundariaSelectedText,
-                        onValueChange = { posicionSecundariaSelectedText = it },
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = posicionSecundariaExpanded) },
-                        modifier = Modifier.menuAnchor(),
-                        label = { Text("2ª Posición") }
-                    )
-                    //Este es el código del desplegable
-                    DropdownMenu(
-                        expanded = posicionSecundariaExpanded,
-                        onDismissRequest = { posicionSecundariaExpanded = false },
-                        modifier = Modifier.exposedDropdownSize()
+                    //Formulario
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        posicionSecundariaOptions.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(text = item) },
-                                onClick = {
-                                    posicionSecundariaSelectedText = item
-                                    posicionSecundariaExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                //Peso
-                ExposedDropdownMenuBox(
-                    expanded = pesoExpanded,
-                    onExpandedChange = { pesoExpanded = !pesoExpanded },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp) //Reducimos el padding.
-                ) {
-                    OutlinedTextField(
-                        value = pesoSelectedText,
-                        onValueChange = { pesoSelectedText = it },
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pesoExpanded) },
-                        modifier = Modifier.menuAnchor(),
-                        label = { Text("Peso") }
-                    )
-                    //Este es el código del desplegable
-                    DropdownMenu(
-                        expanded = pesoExpanded,
-                        onDismissRequest = { pesoExpanded = false },
-                        modifier = Modifier.exposedDropdownSize()
-                    ) {
-                        pesoOptions.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(text = item) },
-                                onClick = {
-                                    pesoSelectedText = item
-                                    pesoExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-                //Altura
-                ExposedDropdownMenuBox(
-                    expanded = alturaExpanded,
-                    onExpandedChange = { alturaExpanded = !alturaExpanded },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp) //Reducimos el padding.
-                ) {
-                    OutlinedTextField(
-                        value = alturaSelectedText,
-                        onValueChange = { alturaSelectedText = it },
-                        readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alturaExpanded) },
-                        modifier = Modifier.menuAnchor(),
-                        label = { Text("Altura") }
-                    )
-                    //Este es el código del desplegable
-                    DropdownMenu(
-                        expanded = alturaExpanded,
-                        onDismissRequest = { alturaExpanded = false },
-                        modifier = Modifier.exposedDropdownSize()
-                    ) {
-                        alturaOptions.forEach { item ->
-                            DropdownMenuItem(
-                                text = { Text(text = item) },
-                                onClick = {
-                                    alturaSelectedText = item
-                                    alturaExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-            //Fecha de nacimiento
-            OutlinedTextField(
-                value = if (fechaNacimiento.isEmpty()) "Seleccionar Fecha de Nacimiento" else fechaNacimiento,
-                onValueChange = { },
-                readOnly = true,
-                label = { Text(text = "Fecha de Nacimiento") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp) //Reducimos el padding.
-                    .clickable { showDatePicker = true },
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.DateRange,
-                        contentDescription = "Seleccionar Fecha",
-                        modifier = Modifier.clickable { showDatePicker = true }
-                    )
-                }
-            )
-            Spacer(modifier = Modifier.height(16.dp)) //Reducimos el spacer.
-            Button(onClick = {
-                //Comprobamos los datos
-                if (nombre.isEmpty() || primerApellido.isEmpty() || posicionPrimariaSelectedText.isEmpty() || posicionSecundariaSelectedText.isEmpty() || pesoSelectedText.isEmpty() || alturaSelectedText.isEmpty()) {
-                    scope.launch {
-                        snackbarHostState.showSnackbar("Debes rellenar todos los campos")
-                    }
-                } else {
-                    val idJugador = generateJugadorId(nombre, primerApellido)
-                    //Si la jugadorImageUri no es nula, subimos la foto a Firebase
-                    if (jugadorImageUri != null) {
-                        uploadImageToFirebaseStorage(
-                            jugadorImageUri!!,
-                            idJugador,
-                            context
-                        ) { jugadorImageUrl ->
-                            saveJugadorToFirestore(
-                                db,
-                                idJugador,
-                                nombre,
-                                primerApellido,
-                                posicionPrimariaSelectedText,
-                                posicionSecundariaSelectedText,
-                                pesoSelectedText,
-                                alturaSelectedText,
-                                fechaNacimiento,
-                                categoryName,
-                                jugadorImageUrl,
-                                context,
-                            )
-                            navController.popBackStack()
-                        }
-                    } else {
-                        //En caso de que no haya imagen, subimos los datos sin la foto
-                        saveJugadorToFirestore(
-                            db,
-                            idJugador,
-                            nombre,
-                            primerApellido,
-                            posicionPrimariaSelectedText,
-                            posicionSecundariaSelectedText,
-                            pesoSelectedText,
-                            alturaSelectedText,
-                            fechaNacimiento,
-                            categoryName,
-                            "", // Aquí se pasa una cadena vacía porque no hay imagen
-                            context,
+                        OutlinedTextField(
+                            value = nombre,
+                            onValueChange = { nombre = it },
+                            label = { Text("Nombre") },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp) //Reducimos el padding.
                         )
-                        navController.popBackStack()
+                        OutlinedTextField(
+                            value = primerApellido,
+                            onValueChange = { primerApellido = it },
+                            label = { Text("Primer Apellido") },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp) //Reducimos el padding.
+                        )
+                    }
+                    //POSICION PRIMARIA Y SECUNDARIA EN FILA
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        //Posicion Primaria
+                        ExposedDropdownMenuBox(
+                            expanded = posicionPrimariaExpanded,
+                            onExpandedChange = { posicionPrimariaExpanded = !posicionPrimariaExpanded },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp) //Reducimos el padding.
+                        ) {
+                            OutlinedTextField(
+                                value = posicionPrimariaSelectedText,
+                                onValueChange = { posicionPrimariaSelectedText = it },
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = posicionPrimariaExpanded) },
+                                modifier = Modifier.menuAnchor(),
+                                label = { Text("1ª Posición") }
+                            )
+                            //Este es el código del desplegable
+                            DropdownMenu(
+                                expanded = posicionPrimariaExpanded,
+                                onDismissRequest = { posicionPrimariaExpanded = false },
+                                modifier = Modifier.exposedDropdownSize()
+                            ) {
+                                posicionPrimariaOptions.forEach { item ->
+                                    DropdownMenuItem(
+                                        text = { Text(text = item) },
+                                        onClick = {
+                                            posicionPrimariaSelectedText = item
+                                            posicionPrimariaExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        //Posicion Secundaria
+                        ExposedDropdownMenuBox(
+                            expanded = posicionSecundariaExpanded,
+                            onExpandedChange = { posicionSecundariaExpanded = !posicionSecundariaExpanded },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp) //Reducimos el padding.
+                        ) {
+                            OutlinedTextField(
+                                value = posicionSecundariaSelectedText,
+                                onValueChange = { posicionSecundariaSelectedText = it },
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = posicionSecundariaExpanded) },
+                                modifier = Modifier.menuAnchor(),
+                                label = { Text("2ª Posición") }
+                            )
+                            //Este es el código del desplegable
+                            DropdownMenu(
+                                expanded = posicionSecundariaExpanded,
+                                onDismissRequest = { posicionSecundariaExpanded = false },
+                                modifier = Modifier.exposedDropdownSize()
+                            ) {
+                                posicionSecundariaOptions.forEach { item ->
+                                    DropdownMenuItem(
+                                        text = { Text(text = item) },
+                                        onClick = {
+                                            posicionSecundariaSelectedText = item
+                                            posicionSecundariaExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        //Peso
+                        ExposedDropdownMenuBox(
+                            expanded = pesoExpanded,
+                            onExpandedChange = { pesoExpanded = !pesoExpanded },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp) //Reducimos el padding.
+                        ) {
+                            OutlinedTextField(
+                                value = pesoSelectedText,
+                                onValueChange = { pesoSelectedText = it },
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pesoExpanded) },
+                                modifier = Modifier.menuAnchor(),
+                                label = { Text("Peso") }
+                            )
+                            //Este es el código del desplegable
+                            DropdownMenu(
+                                expanded = pesoExpanded,
+                                onDismissRequest = { pesoExpanded = false },
+                                modifier = Modifier.exposedDropdownSize()
+                            ) {
+                                pesoOptions.forEach { item ->
+                                    DropdownMenuItem(
+                                        text = { Text(text = item) },
+                                        onClick = {
+                                            pesoSelectedText = item
+                                            pesoExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        //Altura
+                        ExposedDropdownMenuBox(
+                            expanded = alturaExpanded,
+                            onExpandedChange = { alturaExpanded = !alturaExpanded },
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp) //Reducimos el padding.
+                        ) {
+                            OutlinedTextField(
+                                value = alturaSelectedText,
+                                onValueChange = { alturaSelectedText = it },
+                                readOnly = true,
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = alturaExpanded) },
+                                modifier = Modifier.menuAnchor(),
+                                label = { Text("Altura") }
+                            )
+                            //Este es el código del desplegable
+                            DropdownMenu(
+                                expanded = alturaExpanded,
+                                onDismissRequest = { alturaExpanded = false },
+                                modifier = Modifier.exposedDropdownSize()
+                            ) {
+                                alturaOptions.forEach { item ->
+                                    DropdownMenuItem(
+                                        text = { Text(text = item) },
+                                        onClick = {
+                                            alturaSelectedText = item
+                                            alturaExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    //Fecha de nacimiento
+                    OutlinedTextField(
+                        value = if (fechaNacimiento.isEmpty()) "Seleccionar Fecha de Nacimiento" else fechaNacimiento,
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text(text = "Fecha de Nacimiento") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp) //Reducimos el padding.
+                            .clickable { showDatePicker = true },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Filled.DateRange,
+                                contentDescription = "Seleccionar Fecha",
+                                modifier = Modifier.clickable { showDatePicker = true }
+                            )
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp)) //Reducimos el spacer.
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isLoading = true
+                                //Comprobamos los datos
+                                if (nombre.isEmpty() || primerApellido.isEmpty() || posicionPrimariaSelectedText.isEmpty() || posicionSecundariaSelectedText.isEmpty() || pesoSelectedText.isEmpty() || alturaSelectedText.isEmpty()) {
+                                    snackbarHostState.showSnackbar("Debes rellenar todos los campos")
+                                } else {
+                                    val idJugador = generateJugadorId(nombre, primerApellido)
+                                    //Declaramos la variable para usarla en ambos casos.
+                                    var jugadorImageUrl = ""
+                                    //Si la jugadorImageUri no es nula, subimos la foto a Firebase
+                                    if (jugadorImageUri != null) {
+                                        try {
+                                            jugadorImageUrl = uploadImageToFirebaseStorage(
+                                                jugadorImageUri!!,
+                                                idJugador,
+                                                context
+                                            )
+                                        }catch (e: Exception){
+                                            snackbarHostState.showSnackbar("Error al subir la imagen")
+                                        }
+                                    }
+                                    //Aqui es donde actualizamos la funcion
+                                    try {
+                                        addJugadorToFirestore(
+                                            db,
+                                            idJugador,
+                                            nombre,
+                                            primerApellido,
+                                            posicionPrimariaSelectedText,
+                                            posicionSecundariaSelectedText,
+                                            pesoSelectedText,
+                                            alturaSelectedText,
+                                            fechaNacimiento,
+                                            jugadorImageUrl,
+                                            categoryName,
+                                            context
+                                        )
+                                        navController.popBackStack()
+                                    } catch (e: Exception) {
+                                        snackbarHostState.showSnackbar("Error al añadir el jugador")
+                                    }
+                                }
+                                isLoading = false
+                            }
+                        },
+                        enabled = !isLoading
+                    ) {
+                        if(isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        } else {
+                            Text(text = "Añadir jugador")
+                        }
                     }
                 }
-            },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)) { //Reducimos el padding.
-                Text("Guardar Jugador")
             }
         }
     }
 }
-
-//Funcion para subir la imagen a FirebaseStorage
-fun uploadImageToFirebaseStorage(imageUri: Uri, playerId: String, context: Context, onComplete: (String) -> Unit) {
-    val storageRef = FirebaseStorage.getInstance().reference
-    val imageRef = storageRef.child("images/jugadores/${playerId}")
-    val uploadTask = imageRef.putFile(imageUri)
-
-    uploadTask.addOnSuccessListener {
-        imageRef.downloadUrl.addOnSuccessListener { uri ->
-            val imageUrl = uri.toString()
-            onComplete(imageUrl) // Llama a la función de callback con la URL de la imagen
-        }.addOnFailureListener {
-            Toast.makeText(context, "Error al obtener la URL de la imagen", Toast.LENGTH_SHORT).show()
-            onComplete("")
-        }
-    }.addOnFailureListener {
-        Toast.makeText(context, "Error al subir la imagen", Toast.LENGTH_SHORT).show()
-        onComplete("")
-    }
-}
-
-//Funcion para generar la id del jugador
 fun generateJugadorId(nombre: String, primerApellido: String): String {
-    val uuid = UUID.randomUUID().toString()
-    return "${nombre}${primerApellido}$uuid"
-}
-//Funcion para guardar un jugador en Firestore
-fun saveJugadorToFirestore(
-    db: FirebaseFirestore,
-    id: String,
-    nombre: String,
-    primerApellido: String,
-    posicionPrimaria: String,
-    posicionSecundaria: String,
-    peso: String,
-    altura: String,
-    fechaNacimiento: String,
-    categoryName: String,
-    jugadorImageUrl: String,
-    context: Context,
-) {
-    val jugador = Jugador(
-        id = id,
-        nombre = nombre,
-        primerApellido = primerApellido,
-        posicionPrimaria = posicionPrimaria,
-        posicionSecundaria = posicionSecundaria,
-        peso = peso,
-        categoria = categoryName,
-        altura = altura,
-        fechaNacimiento = fechaNacimiento,
-        fotoUrl = jugadorImageUrl
-    )
-    db.collection("jugadores").document(id).set(jugador)
-        .addOnSuccessListener {
-            Toast.makeText(context, "Jugador añadido correctamente", Toast.LENGTH_SHORT).show()
-        }
-        .addOnFailureListener {
-            Toast.makeText(context, "Error al añadir jugador", Toast.LENGTH_SHORT).show()
-        }
-}
-//Funcion para convertir millis a fecha
-fun convertMillisToDate(millis: Long): String {
-    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val calendar = Calendar.getInstance()
-    calendar.timeInMillis = millis
-    return formatter.format(calendar.time)
+    val uniqueId = UUID.randomUUID().toString().substring(0, 8) // Tomamos los primeros 8 caracteres del UUID
+    val sanitizedNombre = nombre.filter { it.isLetterOrDigit() }.take(9).lowercase() // Tomamos los primeros 5 caracteres del nombre
+    val sanitizedApellido = primerApellido.filter { it.isLetterOrDigit() }.take(9).lowercase() // Tomamos los primeros 5 caracteres del apellido
+    return "${sanitizedNombre}-${sanitizedApellido}-$uniqueId" // Ejemplo: luis-perez-f4a2b9d1
 }

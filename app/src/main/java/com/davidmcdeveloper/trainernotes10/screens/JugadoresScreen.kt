@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
@@ -171,7 +172,7 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
                                     deleteJugador(db, jugador.id, context)
                                     jugadores = getJugadoresByCategoria(db, categoryName, context) //Se actualiza la variable.
                                 }
-                            })
+                            }, navController = navController, categoryName = categoryName)
                         }
                     }
                 } else {
@@ -221,7 +222,7 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
 }
 
 @Composable
-fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit) {
+fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit, navController: NavController, categoryName:String) {
     var expanded by remember { mutableStateOf(false) } // Estado para el menú desplegable
     var isImageLoading by remember { mutableStateOf(true) } //Estado de la imagen de los jugadores.
     Card(modifier = Modifier
@@ -291,6 +292,22 @@ fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit) {
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
+                    DropdownMenuItem(
+                        text = { Text("Editar") },
+                        onClick = {
+                            navController.navigate(
+                                Screen.EditJugador.createRoute(
+                                    jugadorId = jugador.id // Usamos solo el ID.
+                                )
+                            )
+                            expanded = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Edit,
+                                contentDescription = "Editar"
+                            )
+                        })
                     DropdownMenuItem(
                         text = { Text("Eliminar") },
                         onClick = {

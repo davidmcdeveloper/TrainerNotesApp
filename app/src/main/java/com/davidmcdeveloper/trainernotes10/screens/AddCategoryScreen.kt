@@ -110,8 +110,9 @@ fun saveCategoryToFirestore(
     context: android.content.Context,
     navController: NavController
 ) {
+    val trimmedCategoryName = categoryName.trim() // Eliminamos los espacios en blanco
     val teamRef = db.collection("equipos").document(teamId) //Buscamos el ID.
-    teamRef.update("categorias", FieldValue.arrayUnion(categoryName))
+    teamRef.update("categorias", FieldValue.arrayUnion(trimmedCategoryName))
         .addOnSuccessListener {
             Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
             navController.popBackStack()

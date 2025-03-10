@@ -95,11 +95,6 @@ fun CategoryHomeScreen(navController: NavController, categoryName: String, db: F
                         .padding(start = 30.dp)) {
                     Icon(Icons.Filled.Home, contentDescription = "Volver al listado de equipos")
                 }
-
-                FloatingActionButton(onClick = { navController.navigate(Screen.AddJugador.createRoute(categoryName)) }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Añadir Jugador")
-                }
-
             }
         },
         topBar = {
