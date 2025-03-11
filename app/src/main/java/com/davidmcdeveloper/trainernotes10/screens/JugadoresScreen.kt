@@ -55,12 +55,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.davidmcdeveloper.trainernotes10.R
 import com.davidmcdeveloper.trainernotes10.dataclass.Jugador
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.firestore.FirebaseFirestore
@@ -134,6 +136,12 @@ fun JugadoresScreen(navController: NavController, categoryName: String, db: Fire
                 .fillMaxSize(),
             contentAlignment = Alignment.TopCenter
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.trainernotesbackground),
+                contentDescription = "Background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -256,7 +264,7 @@ fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit, navController: N
                     Image(
                         painter = rememberAsyncImagePainter(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(com.davidmcdeveloper.trainernotes10.R.drawable.defaultteam)
+                                .data(R.drawable.defaultteam)
                                 .crossfade(true)
                                 .build(),
                             onLoading = { isImageLoading = true },

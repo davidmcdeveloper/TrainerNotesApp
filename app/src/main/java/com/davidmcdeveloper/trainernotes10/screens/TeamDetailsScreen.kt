@@ -1,6 +1,7 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -41,15 +43,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.davidmcdeveloper.trainernotes10.R
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
-import com.davidmcdeveloper.trainernotes10.utils.getEquipoCategories
 import com.davidmcdeveloper.trainernotes10.utils.deleteJugadoresByCategory
+import com.davidmcdeveloper.trainernotes10.utils.getEquipoCategories
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.launch
@@ -112,10 +115,10 @@ fun TeamDetailsScreen(navController: NavController, db: FirebaseFirestore, teamI
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                FloatingActionButton(onClick = { navController.popBackStack() }, //Se ha cambiado.
+                FloatingActionButton(onClick = { navController.navigate(Screen.Home.route) }, //Se ha cambiado.
                     modifier = Modifier
                         .padding(start = 30.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver al listado de equipos")
+                    Icon(Icons.Filled.Home, contentDescription = "Volver al listado de equipos")
                 }
 
                 FloatingActionButton(onClick = {
@@ -133,7 +136,7 @@ fun TeamDetailsScreen(navController: NavController, db: FirebaseFirestore, teamI
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) { //Se ha cambiado.
+                    IconButton(onClick = { navController.navigate("home") }) { //Se ha cambiado.
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver a la lista de equipos"
@@ -153,6 +156,12 @@ fun TeamDetailsScreen(navController: NavController, db: FirebaseFirestore, teamI
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.trainernotesbackground),
+                contentDescription = "Background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
             if (isLoading || isDeleting || isCategoryLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
@@ -186,7 +195,7 @@ fun TeamDetailsScreen(navController: NavController, db: FirebaseFirestore, teamI
                             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                         }
                     }
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     if (categories.isNotEmpty()) {
                         LazyColumn(modifier = Modifier.fillMaxWidth()) {
                             items(categories) { categoryName ->

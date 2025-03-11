@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.davidmcdeveloper.trainernotes10.R
 import com.davidmcdeveloper.trainernotes10.dataclass.Equipo
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.google.firebase.auth.FirebaseAuth
@@ -89,69 +91,78 @@ fun HomeScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
-            if (equipos.isEmpty()) {
-                Text("No hay equipos registrados", style = MaterialTheme.typography.bodyMedium)
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(equipos) { (teamId, equipo) ->
-                        Card(
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .fillMaxWidth()
-                                .clickable {
-                                    scope.launch {
-                                        delay(300) // Añadir un retraso de 300ms
-                                        navController.navigate(Screen.TeamDetails.createRoute(teamId)) //Pasamos el id.
-                                    }
-                                },
-                            shape = CircleShape,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                        ) {
-                            Row(
+        Box(modifier = Modifier.fillMaxSize()){
+            Image(
+                painter = painterResource(id = R.drawable.trainernotesbackground),
+                contentDescription = "Background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Column(modifier = Modifier.padding(paddingValues)) {
+                if (equipos.isEmpty()) {
+                    Text("No hay equipos registrados", style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(equipos) { (teamId, equipo) ->
+                            Card(
                                 modifier = Modifier
                                     .padding(8.dp)
-                                    .fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        scope.launch {
+                                            delay(300) // Añadir un retraso de 300ms
+                                            navController.navigate(Screen.TeamDetails.createRoute(teamId)) //Pasamos el id.
+                                        }
+                                    },
+                                shape = CircleShape,
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                             ) {
-                                var isLoading by remember { mutableStateOf(true) }
-                                Box(modifier = Modifier.size(80.dp)) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(
-                                            model = ImageRequest.Builder(LocalContext.current)
-                                                .data(equipo.imagenUrl)
-                                                .crossfade(true)
-                                                .build(),
-                                            onLoading = { isLoading = true },
-                                            onSuccess = { isLoading = false },
-                                            onError = { isLoading = false }
-                                        ),
-                                        contentDescription = "Escudo del equipo",
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(CircleShape),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                    if (isLoading) {
-                                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                                Row(
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    var isLoading by remember { mutableStateOf(true) }
+                                    Box(modifier = Modifier.size(80.dp)) {
+                                        Image(
+                                            painter = rememberAsyncImagePainter(
+                                                model = ImageRequest.Builder(LocalContext.current)
+                                                    .data(equipo.imagenUrl)
+                                                    .crossfade(true)
+                                                    .build(),
+                                                onLoading = { isLoading = true },
+                                                onSuccess = { isLoading = false },
+                                                onError = { isLoading = false }
+                                            ),
+                                            contentDescription = "Escudo del equipo",
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .clip(CircleShape),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                        if (isLoading) {
+                                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                                        }
                                     }
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(
+                                        text = equipo.nombre,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
                                 }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = equipo.nombre,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
                             }
                         }
                     }
                 }
             }
+
         }
         LaunchedEffect(Unit) {
             db.collection("equipos").get()

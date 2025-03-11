@@ -1,6 +1,7 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.AlertDialog
@@ -40,14 +40,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.davidmcdeveloper.trainernotes10.R
 import com.davidmcdeveloper.trainernotes10.navigation.Screen
 import com.davidmcdeveloper.trainernotes10.utils.deleteJugadoresByCategory
 import com.google.firebase.firestore.FieldValue
@@ -127,6 +128,12 @@ fun CategoryHomeScreen(navController: NavController, categoryName: String, db: F
                 .fillMaxSize(),
             contentAlignment = Alignment.TopCenter
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.trainernotesbackground),
+                contentDescription = "Background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally

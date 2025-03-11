@@ -132,6 +132,7 @@ fun AsistenciasScreen(navController: NavController, categoryName: String, db: Fi
             )
         }
     ) { paddingValues ->
+
         Column(modifier = Modifier.padding(paddingValues)) {
             // 4. Header (Fecha Actual):
             Header(fechaActual)

@@ -1,6 +1,7 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,10 +30,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.davidmcdeveloper.trainernotes10.R
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -54,7 +58,7 @@ fun AddCategoryScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate("home") }) {
+                    IconButton(onClick = { navController.navigate("team_details/$teamId") }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver a la lista de equipos"
@@ -70,6 +74,12 @@ fun AddCategoryScreen(
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.trainernotesbackground),
+                contentDescription = "Background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -81,6 +91,7 @@ fun AddCategoryScreen(
                     value = categoryName,
                     onValueChange = { categoryName = it },
                     label = { Text("Nombre de la categoría") },
+                    textStyle = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
                 )

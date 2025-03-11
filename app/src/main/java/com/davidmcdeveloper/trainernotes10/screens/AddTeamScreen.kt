@@ -98,6 +98,12 @@ fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
                 .fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.trainernotesbackground),
+                contentDescription = "Background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
             if (isLoading) {
                 CircularProgressIndicator()
             } else {
