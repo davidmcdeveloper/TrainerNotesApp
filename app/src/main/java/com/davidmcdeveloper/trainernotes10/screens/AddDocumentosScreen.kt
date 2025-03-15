@@ -2,7 +2,6 @@ package com.davidmcdeveloper.trainernotes10.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -33,35 +31,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.davidmcdeveloper.trainernotes10.R
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddCategoryScreen(
-    navController: NavController,
-    teamId: String, //Añadimos el parametro.
-    db: FirebaseFirestore //Añadimos el parametro.
-) {
+fun AddDocumentosScreen(navController: NavController, categoryName: String, db: FirebaseFirestore) {
+    var nombre by remember { mutableStateOf("") }
+    var enlace by remember { mutableStateOf("") }
     val context = LocalContext.current
-    var categoryName by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Añadir categoría") },
+                title = { Text("Añadir Documento") },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigate("team_details/$teamId") }) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver a la lista de equipos"
+                            contentDescription = "Volver"
                         )
                     }
                 }
@@ -72,7 +65,8 @@ fun AddCategoryScreen(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.TopCenter
+
         ) {
             Image(
                 painter = painterResource(id = R.drawable.addbackground),
@@ -83,52 +77,34 @@ fun AddCategoryScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                OutlinedTextField(
-                    value = categoryName,
-                    onValueChange = { categoryName = it },
-                    label = { Text("Nombre de la categoría") },
-                    textStyle = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-                )
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = {
-                        if (categoryName.isNotEmpty()) {
-                            saveCategoryToFirestore(db, teamId, categoryName, context, navController) //Pasamos el ID.
-                        } else {
-                            Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
-                        }
-                    },
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre") },
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = "Crear categoría")
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = enlace,
+                    onValueChange = { enlace = it },
+                    label = { Text("Enlace") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(onClick = {
+                    Toast.makeText(context, "Nombre: $nombre, Enlace: $enlace", Toast.LENGTH_SHORT).show()
+                    //Aquí iria la funcion para añadir el documento a la base de datos
+                }) {
+                    Text("Añadir")
                 }
             }
         }
     }
-}
-
-fun saveCategoryToFirestore(
-    db: FirebaseFirestore,
-    teamId: String, //Recibimos el id.
-    categoryName: String,
-    context: android.content.Context,
-    navController: NavController
-) {
-    val trimmedCategoryName = categoryName.trim() // Eliminamos los espacios en blanco
-    val teamRef = db.collection("equipos").document(teamId) //Buscamos el ID.
-    teamRef.update("categorias", FieldValue.arrayUnion(trimmedCategoryName))
-        .addOnSuccessListener {
-            Toast.makeText(context, "Categoría añadida correctamente", Toast.LENGTH_SHORT).show()
-            navController.popBackStack()
-        }
-        .addOnFailureListener {
-            Toast.makeText(context, "Error al guardar categoría", Toast.LENGTH_SHORT).show()
-        }
 }

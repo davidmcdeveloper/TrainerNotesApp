@@ -95,7 +95,9 @@ fun HomeScreen(navController: NavController) {
             Image(
                 painter = painterResource(id = R.drawable.trainernotesbackground),
                 contentDescription = "Background",
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(paddingValues)) {

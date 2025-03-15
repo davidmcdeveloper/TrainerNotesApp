@@ -199,14 +199,14 @@ fun CategoryHomeScreen(navController: NavController, categoryName: String, db: F
                         )
                     }
                     Button(onClick = {
-                        Toast.makeText(context, "Has pulsado Objetivos", Toast.LENGTH_SHORT).show()
+                        navController.navigate(Screen.Documentos.createRoute(categoryName))
                     },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 30.dp),
                         shape = RoundedCornerShape(16.dp)) {
                         Text(
-                            text = "Objetivos",
+                            text = "Documentos",
                             style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         )
                     }

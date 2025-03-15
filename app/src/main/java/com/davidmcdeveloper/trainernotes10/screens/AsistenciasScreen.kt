@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -132,8 +133,15 @@ fun AsistenciasScreen(navController: NavController, categoryName: String, db: Fi
             )
         }
     ) { paddingValues ->
+        Image(
+            painter = painterResource(id = R.drawable.addbackground),
+            contentDescription = "Background",
+            modifier = Modifier.padding(paddingValues).fillMaxSize(),
+            contentScale = ContentScale.Crop)
 
-        Column(modifier = Modifier.padding(paddingValues)) {
+        Column(modifier = Modifier.padding(paddingValues)
+
+        ) {
             // 4. Header (Fecha Actual):
             Header(fechaActual)
 

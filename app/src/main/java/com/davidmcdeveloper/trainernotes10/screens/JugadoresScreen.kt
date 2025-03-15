@@ -235,14 +235,14 @@ fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit, navController: N
     var isImageLoading by remember { mutableStateOf(true) } //Estado de la imagen de los jugadores.
     Card(modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 8.dp)) {
+        .padding(horizontal = 6.dp, vertical = 5.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(modifier = Modifier.size(60.dp)) {
+            Box(modifier = Modifier.size(52.dp)) {
                 if (jugador.fotoUrl.isNotEmpty()) {
                     Image(
                         painter = rememberAsyncImagePainter(
@@ -264,7 +264,7 @@ fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit, navController: N
                     Image(
                         painter = rememberAsyncImagePainter(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(R.drawable.defaultteam)
+                                .data(R.drawable.jugadordefault)
                                 .crossfade(true)
                                 .build(),
                             onLoading = { isImageLoading = true },
@@ -284,7 +284,9 @@ fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit, navController: N
             }
 
             Spacer(modifier = Modifier.padding(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier
+                .weight(1f)
+            ) {
                 Text(text = "${jugador.nombre} ${jugador.primerApellido}")
                 Text(text = "Posiciones: ${jugador.posicionPrimaria}, ${jugador.posicionSecundaria}")
             }

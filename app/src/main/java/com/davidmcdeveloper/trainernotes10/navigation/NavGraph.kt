@@ -8,9 +8,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.davidmcdeveloper.trainernotes10.screens.AddCategoryScreen
+import com.davidmcdeveloper.trainernotes10.screens.AddDocumentosScreen
 import com.davidmcdeveloper.trainernotes10.screens.AddJugadorScreen
 import com.davidmcdeveloper.trainernotes10.screens.AddTeamScreen
 import com.davidmcdeveloper.trainernotes10.screens.CategoryHomeScreen
+import com.davidmcdeveloper.trainernotes10.screens.DocumentosScreen
 import com.davidmcdeveloper.trainernotes10.screens.EditJugadorScreen
 import com.davidmcdeveloper.trainernotes10.screens.HistorialScreen
 import com.davidmcdeveloper.trainernotes10.screens.HomeScreen
@@ -57,11 +59,17 @@ sealed class Screen(val route: String) {
         fun createRoute(categoryName: String) = "historial/$categoryName"
     }
     object EditJugador : Screen(
-        "jugador_edit/{$ARG_JUGADOR_ID}") { //Modificamos la ruta
+        "jugador_edit/{$ARG_JUGADOR_ID}") {
         fun createRoute(
             jugadorId: String
         ) =
             "jugador_edit/$jugadorId"
+    }
+    object Documentos : Screen("documentos/{$ARG_CATEGORY_NAME}") {
+        fun createRoute(categoryName: String) = "documentos/$categoryName"
+    }
+    object AddDocumentos : Screen("addDocumentos/{$ARG_CATEGORY_NAME}") {
+        fun createRoute(categoryName: String) = "addDocumentos/$categoryName"
     }
 
 }
@@ -154,6 +162,26 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
                 db = db,
                 jugadorId = backStackEntry.arguments?.getString(ARG_JUGADOR_ID) ?: ""
             )
+        }
+        composable(
+            Screen.Documentos.route,
+            arguments = listOf(navArgument(ARG_CATEGORY_NAME) { type = NavType
+                .StringType })
+        ) { backStackEntry ->
+            val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME) ?: ""
+            DocumentosScreen(
+                navController = navController,
+                categoryName = categoryName,
+                db = db)
+            }
+        composable(
+            Screen.AddDocumentos.route, //Añadimos la nueva ruta
+            arguments = listOf(navArgument(ARG_CATEGORY_NAME) { type = NavType.StringType })
+        ) { backStackEntry ->
+            val categoryName = backStackEntry.arguments?.getString(ARG_CATEGORY_NAME)
+            if (categoryName != null) {
+                AddDocumentosScreen(navController, categoryName, db)
+            }
         }
     }
 }

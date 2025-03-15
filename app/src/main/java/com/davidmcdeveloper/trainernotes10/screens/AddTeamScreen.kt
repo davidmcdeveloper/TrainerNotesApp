@@ -99,7 +99,7 @@ fun AddTeamScreen(navController: NavController, db: FirebaseFirestore) {
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.trainernotesbackground),
+                painter = painterResource(id = R.drawable.addbackground),
                 contentDescription = "Background",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
