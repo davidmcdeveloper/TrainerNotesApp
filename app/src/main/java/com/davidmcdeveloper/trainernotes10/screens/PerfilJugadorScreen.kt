@@ -48,7 +48,6 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.davidmcdeveloper.trainernotes10.R
 import com.davidmcdeveloper.trainernotes10.dataclass.Jugador
-import com.davidmcdeveloper.trainernotes10.utils.Rating
 import com.davidmcdeveloper.trainernotes10.utils.Valoracion
 import com.davidmcdeveloper.trainernotes10.utils.calculateCurrentWeek
 import com.davidmcdeveloper.trainernotes10.utils.getJugadorById
@@ -68,6 +67,7 @@ fun PerfilJugadorScreen(navController: NavController, db: FirebaseFirestore, jug
     var isButtonEnabled by remember { mutableStateOf(false) }
     var buttonText by remember { mutableStateOf("Guardar") }
     var ratings by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    var initialRatings by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     var lastRatingDate by remember { mutableStateOf("") }
     var currentWeek by remember { mutableStateOf("") }
     //Estado para saber cuando esta cargando la informacion
@@ -79,6 +79,8 @@ fun PerfilJugadorScreen(navController: NavController, db: FirebaseFirestore, jug
     // Llama a la funcion de obtener datos de firestore.
     LaunchedEffect(key1 = jugadorId) {
         getRatingsFromFirestore(db, jugadorId, onSuccess = { rating ->
+            // Guardar los datos originales antes de modificarlos.
+            initialRatings = rating.ratings.associate { it.skill to it.rating }
             ratings = rating.ratings.associate { it.skill to it.rating }
             lastRatingDate = rating.lastRatingDate
             isLoading = false
@@ -89,6 +91,8 @@ fun PerfilJugadorScreen(navController: NavController, db: FirebaseFirestore, jug
             } else {
                 "Guardar"
             }
+            //Comprobamos que esten iguales.
+            isButtonEnabled = ratings != initialRatings
         }, onFailure = { exception ->
             Log.e("PerfilJugadorScreen", "Error al obtener las valoraciones", exception)
         })
@@ -194,8 +198,10 @@ fun PerfilJugadorScreen(navController: NavController, db: FirebaseFirestore, jug
                                 skillName = skill,
                                 rating = ratings[skill],
                                 onRatingChanged = { newRating ->
+                                    //Cambiamos el valor nuevo.
                                     ratings = ratings.toMutableMap().apply { put(skill, newRating) }
-                                    isButtonEnabled = true
+                                    //Comprobamos que sea distinto.
+                                    isButtonEnabled = ratings != initialRatings
                                 }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -214,6 +220,9 @@ fun PerfilJugadorScreen(navController: NavController, db: FirebaseFirestore, jug
                                 // Comprobar si se ha guardado en la misma semana
                                 if (currentWeek == calculateCurrentWeek()) {
                                     buttonText = "Actualizar"
+                                    //Actualizamos los ratings.
+                                    initialRatings = ratings
+                                    isButtonEnabled = false
                                 } else {
                                     buttonText = "Guardar"
                                 }
@@ -234,12 +243,12 @@ fun PerfilJugadorScreen(navController: NavController, db: FirebaseFirestore, jug
 //Funcion para devolver el color en funcion del valor.
 fun getColorForRating(rating: Int): Color {
     return when (rating) {
-        1 -> Color(0xFFFF0000) // Rojo
-        2 -> Color(0xFFFF5722) // Naranja rojizo
-        3 -> Color(0xFFFFF000) // Amarillo
-        4 -> Color(0xFF8BC34A) // Verde lima
-        5 -> Color(0xFF4CAF50) // Verde intenso
-        else -> Color.Gray // Valor por defecto (por si acaso)
+        1 -> Color(0xFFFFF9C4) // Amarillo Claro Pastel
+        2 -> Color(0xFFFFF59D) // Amarillo Claro
+        3 -> Color(0xFFFFF176) // Amarillo Medio
+        4 -> Color(0xFFFFEE58) // Amarillo Intenso
+        5 -> Color(0xFFFDD835) // Amarillo Oscuro
+        else -> Color(0xFFBDBDBD) // Gris Claro
     }
 }
 
