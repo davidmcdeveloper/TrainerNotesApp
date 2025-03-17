@@ -11,6 +11,7 @@ import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
@@ -149,4 +150,121 @@ suspend fun getJugadorById(db: FirebaseFirestore, jugadorId: String, context: Co
     } catch (e: Exception) {
         null
     }
+}
+//Funcion para obtener la semana actual.
+fun calculateCurrentWeek(): String {
+    val calendar = Calendar.getInstance()
+    val year = calendar.get(Calendar.YEAR)
+    val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
+    return "$year-$weekOfYear"
+}
+
+// Data class para representar una valoracion.
+data class Valoracion(
+    val skill: String = "",
+    val rating: Int = 0
+)
+
+// Data class para representar un rating.
+data class Rating(
+    val ratings: List<Valoracion> = emptyList(),
+    val lastRatingDate: String = ""
+)
+
+// Funcion para obtener las valoraciones de firestore.
+suspend fun getRatingsFromFirestore(
+    db: FirebaseFirestore,
+    jugadorId: String,
+    onSuccess: (Rating) -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val currentWeek = calculateCurrentWeek()
+    db.collection("calificaciones")
+        .document(jugadorId)
+        .collection("semanas")
+        .document(currentWeek)
+        .get()
+        .addOnSuccessListener { document ->
+            if (document.exists()) {
+                val ratingsList = mutableListOf<Valoracion>()
+                val ratingsData = document.get("ratings") as? List<Map<String, Any>>
+                ratingsData?.forEach { ratingMap ->
+                    val skill = ratingMap["skill"] as? String ?: ""
+                    val rating = (ratingMap["rating"] as? Long ?: 0).toInt()
+                    ratingsList.add(Valoracion(skill, rating))
+                }
+                val lastRatingDate = document.getString("lastRatingDate") ?: ""
+                val rating = Rating(ratingsList, lastRatingDate)
+                onSuccess(rating)
+            } else {
+                // Si el documento no existe, enviar un rating vacio.
+                onSuccess(Rating())
+            }
+        }
+        .addOnFailureListener { exception ->
+            onFailure(exception)
+        }
+}
+
+//Funcion para guardar la valoracion en firestore.
+fun saveRating(
+    db: FirebaseFirestore,
+    jugadorId: String,
+    ratings: List<Valoracion>,
+    onSuccess: () -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val currentWeek = calculateCurrentWeek()
+    val lastRatingDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+    val ratingData = hashMapOf(
+        "ratings" to ratings,
+        "lastRatingDate" to lastRatingDate
+    )
+    db.collection("calificaciones")
+        .document(jugadorId)
+        .collection("semanas")
+        .document(currentWeek)
+        .set(ratingData)
+        .addOnSuccessListener {
+            onSuccess()
+        }
+        .addOnFailureListener { exception ->
+            onFailure(exception)
+        }
+}
+
+//Funcion para obtener el rating.
+suspend fun getRating(
+    db: FirebaseFirestore,
+    jugadorId: String,
+    onSuccess: (Rating) -> Unit,
+    onFailure: (Exception) -> Unit
+) {
+    val currentWeek = calculateCurrentWeek()
+
+    db.collection("calificaciones")
+        .document(jugadorId)
+        .collection("semanas")
+        .document(currentWeek)
+        .get()
+        .addOnSuccessListener { document ->
+            if (document.exists()) {
+                val ratingsList = mutableListOf<Valoracion>()
+                val ratingsData = document.get("ratings") as? List<Map<String, Any>>
+                ratingsData?.forEach { ratingMap ->
+                    val skill = ratingMap["skill"] as? String ?: ""
+                    val rating = (ratingMap["rating"] as? Long ?: 0).toInt()
+                    ratingsList.add(Valoracion(skill, rating))
+                }
+                val lastRatingDate = document.getString("lastRatingDate") ?: ""
+                val rating = Rating(ratingsList, lastRatingDate)
+                onSuccess(rating)
+            } else {
+                // Si el documento no existe, enviar un rating vacio.
+                onSuccess(Rating())
+            }
+        }
+        .addOnFailureListener { exception ->
+            onFailure(exception)
+        }
 }

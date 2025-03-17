@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -302,6 +303,22 @@ fun JugadorCard(jugador: Jugador, onJugadorDeleted: () -> Unit, navController: N
                     expanded = expanded,
                     onDismissRequest = { expanded = false }
                 ) {
+                    DropdownMenuItem(
+                        text = { Text("Perfil") },
+                        onClick = {
+                            navController.navigate(
+                                Screen.PerfilJugador.createRoute(jugadorId = jugador.id)
+                            )
+                            expanded = false
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.Person, //Puedes cambiarlo por otro icono.
+                                contentDescription = "Perfil"
+                            )
+                        }
+                    )
+
                     DropdownMenuItem(
                         text = { Text("Editar") },
                         onClick = {
