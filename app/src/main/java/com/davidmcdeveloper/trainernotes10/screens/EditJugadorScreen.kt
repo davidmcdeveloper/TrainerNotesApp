@@ -2,7 +2,6 @@ package com.davidmcdeveloper.trainernotes10.screens
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -67,6 +66,7 @@ import com.davidmcdeveloper.trainernotes10.R
 import com.davidmcdeveloper.trainernotes10.dataclass.Jugador
 import com.davidmcdeveloper.trainernotes10.utils.convertMillisToDate
 import com.davidmcdeveloper.trainernotes10.utils.deleteJugadorImage
+import com.davidmcdeveloper.trainernotes10.utils.getJugadorById
 import com.davidmcdeveloper.trainernotes10.utils.uploadImageToFirebaseStorage
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -119,8 +119,7 @@ fun EditJugadorScreen(navController: NavController, db: FirebaseFirestore, jugad
     }
     //Con el LaunchedEffect vamos a obtener los datos del jugador.
     LaunchedEffect(key1 = jugadorId) {
-        Log.d("EditJugadorScreen", "LaunchedEffect: Iniciado para jugadorId: $jugadorId")
-        jugador = getJugadorById(db, jugadorId, context)
+        jugador = getJugadorById(db, jugadorId, context) //Llamamos a la funcion de utils.
         jugador?.let {
             nombre = it.nombre
             primerApellido = it.primerApellido
@@ -130,7 +129,6 @@ fun EditJugadorScreen(navController: NavController, db: FirebaseFirestore, jugad
             pesoSelectedText = it.peso
             alturaSelectedText = it.altura
             fotoUrl = it.fotoUrl //Recogemos la foto.
-            Log.d("EditJugadorScreen", "LaunchedEffect: Foto recuperada de Firestore: $fotoUrl")
         }
         isLoading = false
     }
@@ -184,7 +182,7 @@ fun EditJugadorScreen(navController: NavController, db: FirebaseFirestore, jugad
             contentAlignment = Alignment.TopCenter
         ) {
             //Dentro del Scaffold
-if (!isLoading) { // Si no está cargando, mostramos el contenido.
+            if (!isLoading) { // Si no está cargando, mostramos el contenido.
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -201,7 +199,6 @@ if (!isLoading) { // Si no está cargando, mostramos el contenido.
                         ) {
                             //IMAGEN DEL JUGADOR
                             if (jugadorImageUri != null) {
-                                Log.d("EditJugadorScreen", "Image: Mostrando nueva imagen. URI: $jugadorImageUri")
                                 Image(
                                     painter = rememberAsyncImagePainter(
                                         model = ImageRequest.Builder(LocalContext.current)
@@ -217,7 +214,6 @@ if (!isLoading) { // Si no está cargando, mostramos el contenido.
                                 )
                             } else {
                                 if (fotoUrl.isNotEmpty()) {
-                                    Log.d("EditJugadorScreen", "Image: Mostrando imagen antigua. URL: $fotoUrl")
                                     Image(
                                         painter = rememberAsyncImagePainter(
                                             model = ImageRequest.Builder(LocalContext.current)
@@ -232,7 +228,6 @@ if (!isLoading) { // Si no está cargando, mostramos el contenido.
                                         contentScale = ContentScale.Crop
                                     )
                                 } else {//Mostramos la foto por defecto
-                                    Log.d("EditJugadorScreen", "Image: Mostrando imagen por defecto.")
                                     Image(
                                         painter = painterResource(id = R.drawable.jugadordefault),
                                         contentDescription = "Añadir Foto",
@@ -449,48 +444,30 @@ if (!isLoading) { // Si no está cargando, mostramos el contenido.
                         Button(
                             onClick = {
                                 scope.launch {
-                                    Log.d("EditJugadorScreen", "onClick: Inicio")
                                     isUpdating = true // Activamos el indicador de actualizando
-                                    Log.d("EditJugadorScreen", "onClick: isUpdating activado")
-
                                     // Comprobamos los datos antes de subir nada.
-                                    Log.d("EditJugadorScreen", "onClick: Comprobando campos...")
                                     if (nombre.isEmpty() || primerApellido.isEmpty() || posicionPrimariaSelectedText.isEmpty() || posicionSecundariaSelectedText.isEmpty() || pesoSelectedText.isEmpty() || alturaSelectedText.isEmpty()) {
-                                        Log.d("EditJugadorScreen", "onClick: Faltan campos")
                                         snackbarHostState.showSnackbar("Debes rellenar todos los campos")
                                     } else {
-                                        Log.d("EditJugadorScreen", "onClick: Todos los campos rellenos")
-
                                         //Declaramos la variable para usarla en ambos casos.
                                         var jugadorImageUrl = fotoUrl
+                                        var isImageUploaded = true //Variable para controlar que se ha subido.
                                         //Si la jugadorImageUri no es nula, subimos la foto a Firebase
                                         if (jugadorImageUri != null) {
-                                            Log.d("EditJugadorScreen", "onClick: Subiendo nueva imagen...")
                                             try {
                                                 jugadorImageUrl = uploadImageToFirebaseStorage(
                                                     jugadorImageUri!!,
                                                     jugadorId,
                                                     context
                                                 )
-                                                Log.d(
-                                                    "EditJugadorScreen",
-                                                    "onClick: Imagen subida correctamente. Nueva URL: $jugadorImageUrl"
-                                                )
                                             } catch (e: Exception) {
-                                                Log.e("EditJugadorScreen", "onClick: Error al subir la imagen", e)
                                                 snackbarHostState.showSnackbar("Error al subir la imagen")
                                                 jugadorImageUrl = ""
                                                 jugadorImageUri = null
+                                                isImageUploaded = false
                                             }
-                                        } else {
-                                            Log.d("EditJugadorScreen", "onClick: No hay nueva imagen, se mantiene la anterior")
                                         }
-                                        //Comprobamos si la imagen se ha subido correctamente (o si no se ha subido ninguna, que conserve la antigua)
-                                        Log.d("EditJugadorScreen", "onClick: Comprobando si la imagen se ha subido...")
-                                        if (jugadorImageUrl.isNotEmpty()){
-                                            Log.d("EditJugadorScreen", "onClick: Imagen correcta")
-                                            //Aqui es donde actualizamos la funcion
-                                            Log.d("EditJugadorScreen", "onClick: Actualizando datos en Firestore...")
+                                        if (isImageUploaded) {
                                             try {
                                                 updateJugadorInFirestore(
                                                     db,
@@ -506,23 +483,14 @@ if (!isLoading) { // Si no está cargando, mostramos el contenido.
                                                     context,
                                                     fotoUrl //Añadimos la url antigua
                                                 )
-                                                //Hemos sacado el cambio de pantalla, para realizarlo mas adelante.
                                             } catch (e: Exception) {
-                                                Log.e("EditJugadorScreen", "onClick: Error al actualizar el jugador", e)
                                                 snackbarHostState.showSnackbar("Error al actualizar el jugador")
                                             } finally {
-                                                Log.d("EditJugadorScreen", "onClick: Pasando por finally...")
                                                 isUpdating = false
-                                                //Aqui es donde vamos a poner el cambio de pantalla
                                                 navController.popBackStack()
                                             }
-                                        } else {
-                                            Log.e("EditJugadorScreen", "onClick: Error al actualizar el jugador, no se ha subido la imagen")
-                                            snackbarHostState.showSnackbar("Error al actualizar el jugador, no se ha subido la imagen")
                                         }
                                     }
-
-                                    Log.d("EditJugadorScreen", "onClick: Fin")
                                 }
                             },
                             enabled = !isUpdating // Desactivamos el botón cuando esté actualizando
@@ -564,7 +532,6 @@ suspend fun updateJugadorInFirestore(
     context: Context,
     oldImageUrl: String //Añadimos la url antigua
 ) {
-    Log.d("EditJugadorScreen", "updateJugadorInFirestore: Inicio. JugadorId: $id, nueva URL: $jugadorImageUrl, antigua URL: $oldImageUrl")
     val jugador = hashMapOf(
         "nombre" to nombre,
         "primerApellido" to primerApellido,
@@ -576,49 +543,13 @@ suspend fun updateJugadorInFirestore(
         "fotoUrl" to jugadorImageUrl
     )
     try {
-        Log.d("EditJugadorScreen", "updateJugadorInFirestore: Actualizando datos...")
         db.collection("jugadores").document(id).update(jugador as Map<String, Any>).await()
-        Log.d("EditJugadorScreen", "updateJugadorInFirestore: Datos actualizados")
         //Si hay una imagen antigua y es diferente a la nueva, la eliminamos.
         if (oldImageUrl.isNotEmpty() && oldImageUrl != jugadorImageUrl) {
-            Log.d("EditJugadorScreen", "updateJugadorInFirestore: Eliminando imagen antigua...")
             deleteJugadorImage(oldImageUrl, context)
-            Log.d("EditJugadorScreen", "updateJugadorInFirestore: Imagen antigua eliminada")
-        } else {
-            Log.d("EditJugadorScreen", "updateJugadorInFirestore: No hay imagen antigua o es igual a la nueva")
         }
         Toast.makeText(context, "Jugador actualizado correctamente", Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
-        Log.e("EditJugadorScreen", "updateJugadorInFirestore: Error al actualizar jugador", e)
         Toast.makeText(context, "Error al actualizar jugador", Toast.LENGTH_SHORT).show()
-    } finally {
-        Log.d("EditJugadorScreen", "updateJugadorInFirestore: Fin")
-    }
-}
-
-//Funcion para obtener un jugador en Firestore
-suspend fun getJugadorById(db: FirebaseFirestore, jugadorId: String, context: Context): Jugador? {
-    return try {
-        val document = db.collection("jugadores").document(jugadorId).get().await()
-        if (document.exists()) {
-            Jugador(
-                id = document.id,
-                nombre = document.getString("nombre") ?: "",
-                primerApellido = document.getString("primerApellido") ?: "",
-                posicionPrimaria = document.getString("posicionPrimaria") ?: "",
-                posicionSecundaria = document.getString("posicionSecundaria") ?: "",
-                peso = document.getString("peso") ?: "",
-                categoria = document.getString("categoria") ?: "",
-                fotoUrl = document.getString("fotoUrl") ?: "",
-                altura = document.getString("altura") ?: "",
-                fechaNacimiento = document.getString("fechaNacimiento") ?: ""
-            )
-        } else {
-            Toast.makeText(context, "Jugador no encontrado", Toast.LENGTH_SHORT).show()
-            null
-        }
-    } catch (e: Exception) {
-        Toast.makeText(context, "Error al obtener jugador", Toast.LENGTH_SHORT).show()
-        null
     }
 }

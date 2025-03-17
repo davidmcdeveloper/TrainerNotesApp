@@ -18,6 +18,7 @@ import com.davidmcdeveloper.trainernotes10.screens.HistorialScreen
 import com.davidmcdeveloper.trainernotes10.screens.HomeScreen
 import com.davidmcdeveloper.trainernotes10.screens.JugadoresScreen
 import com.davidmcdeveloper.trainernotes10.screens.LoginScreen
+import com.davidmcdeveloper.trainernotes10.screens.PerfilJugadorScreen
 import com.davidmcdeveloper.trainernotes10.screens.TeamDetailsScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -64,6 +65,13 @@ sealed class Screen(val route: String) {
             jugadorId: String
         ) =
             "jugador_edit/$jugadorId"
+    }
+    object PerfilJugador : Screen(
+        "perfil_jugador/{$ARG_JUGADOR_ID}") { //Creamos la ruta para PerfilJugador
+        fun createRoute(
+            jugadorId: String
+        ) =
+            "perfil_jugador/$jugadorId"
     }
     object Documentos : Screen("documentos/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "documentos/$categoryName"
@@ -164,6 +172,18 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
             )
         }
         composable(
+            route = Screen.PerfilJugador.route,
+            arguments = listOf(
+                navArgument(ARG_JUGADOR_ID) { type = NavType.StringType },
+            )
+        ) { backStackEntry ->
+            PerfilJugadorScreen(
+                navController = navController,
+                db = db,
+                jugadorId = backStackEntry.arguments?.getString(ARG_JUGADOR_ID) ?: ""
+            )
+        }
+        composable(
             Screen.Documentos.route,
             arguments = listOf(navArgument(ARG_CATEGORY_NAME) { type = NavType
                 .StringType })
@@ -173,7 +193,7 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
                 navController = navController,
                 categoryName = categoryName,
                 db = db)
-            }
+        }
         composable(
             Screen.AddDocumentos.route, //Añadimos la nueva ruta
             arguments = listOf(navArgument(ARG_CATEGORY_NAME) { type = NavType.StringType })

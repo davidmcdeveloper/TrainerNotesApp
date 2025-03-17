@@ -10,5 +10,6 @@ data class Jugador(
     val categoria: String = "",
     val altura: String = "",
     val fechaNacimiento: String = "",
-    val fotoUrl: String = ""
+    val fotoUrl: String = "",
+    val nLicencia: String = "",
 )

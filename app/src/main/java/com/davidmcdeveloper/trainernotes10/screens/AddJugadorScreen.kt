@@ -77,26 +77,28 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
     var fechaNacimiento by remember { mutableStateOf("") }
+    //Numero de licencia
+    var nLicencia by remember { mutableStateOf("") }
 
     //ExposedDropdownMenuBox
     //Posicion Primaria
-    var posicionPrimariaOptions =
+    val posicionPrimariaOptions =
         listOf("1ª Línea", "2ª Línea", "Talona", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
     var posicionPrimariaExpanded by remember { mutableStateOf(false) }
     var posicionPrimariaSelectedText by remember { mutableStateOf("") }
     //Posicion Secundaria
-    var posicionSecundariaOptions =
+    val posicionSecundariaOptions =
         listOf("1ª Línea", "2ª Línea", "Talona", "Flanker", "Ocho", "Medio Melé", "Apertura", "Ala Interno", "Ala Externo", "Primer Centro", "Segundo Centro", "Zaguero")
     var posicionSecundariaExpanded by remember { mutableStateOf(false) }
     var posicionSecundariaSelectedText by remember { mutableStateOf("") }
     //Peso
-    var pesoOptions =
-        (50..200).map { it.toString() + " kg" } // Rango de 50 a 200 kg
+    val pesoOptions =
+        (50..200).map { "$it kg" } // Rango de 50 a 200 kg
     var pesoExpanded by remember { mutableStateOf(false) }
     var pesoSelectedText by remember { mutableStateOf("") }
     //Altura
-    var alturaOptions =
-        (110..220).map { (it.toFloat() / 100).toString() + " m" } // Rango de 1.10 a 2.20 m
+    val alturaOptions =
+        (110..220).map { String.format("%.2f m", it.toFloat() / 100) } // Rango de 1.10 a 2.20 m
     var alturaExpanded by remember { mutableStateOf(false) }
     var alturaSelectedText by remember { mutableStateOf("") }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -157,7 +159,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                 .padding(paddingValues)
                 .fillMaxSize(),
             contentAlignment = Alignment.TopCenter
-        ){
+        ) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -399,6 +401,15 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                             )
                         }
                     )
+                    //Nuevo Textfield de Numero de Licencia
+                    OutlinedTextField(
+                        value = nLicencia,
+                        onValueChange = { nLicencia = it },
+                        label = { Text("Nº Licencia (Opcional)") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp) //Reducimos el padding.
+                    )
                     Spacer(modifier = Modifier.height(16.dp)) //Reducimos el spacer.
                     Button(
                         onClick = {
@@ -419,11 +430,10 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                                                 idJugador,
                                                 context
                                             )
-                                        }catch (e: Exception){
+                                        } catch (e: Exception) {
                                             snackbarHostState.showSnackbar("Error al subir la imagen")
                                         }
                                     }
-                                    //Aqui es donde actualizamos la funcion
                                     try {
                                         addJugadorToFirestore(
                                             db,
@@ -437,7 +447,8 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                                             fechaNacimiento,
                                             jugadorImageUrl,
                                             categoryName,
-                                            context
+                                            context,
+                                            nLicencia //Enviamos el numero de licencia
                                         )
                                         navController.popBackStack()
                                     } catch (e: Exception) {
@@ -449,7 +460,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                         },
                         enabled = !isLoading
                     ) {
-                        if(isLoading) {
+                        if (isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp,
@@ -464,6 +475,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
         }
     }
 }
+
 fun generateJugadorId(nombre: String, primerApellido: String): String {
     val uniqueId = UUID.randomUUID().toString().substring(0, 8) // Tomamos los primeros 8 caracteres del UUID
     val sanitizedNombre = nombre.filter { it.isLetterOrDigit() }.take(9).lowercase() // Tomamos los primeros 5 caracteres del nombre
