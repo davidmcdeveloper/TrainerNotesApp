@@ -3,6 +3,13 @@ package com.davidmcdeveloper.trainernotes10.utils
 import android.content.Context
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.Composable
 import com.davidmcdeveloper.trainernotes10.dataclass.Jugador
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.ktx.Firebase
@@ -267,4 +274,36 @@ suspend fun getRating(
         .addOnFailureListener { exception ->
             onFailure(exception)
         }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MyDatePicker(
+    onDateSelected: (String) -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState()
+    val selectedDate = datePickerState.selectedDateMillis?.let {
+        convertMillisToDate(it)
+    } ?: ""
+
+    DatePickerDialog(
+        onDismissRequest = { onDismissRequest() },
+        confirmButton = {
+            TextButton(onClick = {
+                onDateSelected(selectedDate)
+                onDismissRequest()
+            }) {
+                Text(text = "Confirmar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onDismissRequest()
+            }) {
+                Text(text = "Cancelar")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
+    }
 }

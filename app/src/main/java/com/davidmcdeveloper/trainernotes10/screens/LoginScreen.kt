@@ -21,6 +21,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -63,6 +64,10 @@ fun LoginScreen(
     var password by remember { mutableStateOf(TextFieldValue()) }
     var passwordVisible by remember { mutableStateOf(false) }
     val localContext = LocalContext.current
+    //Variable para guardar el error del email
+    var emailError by remember { mutableStateOf(false) }
+    //Variable para guardar el error de la contraseña
+    var passwordError by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -87,7 +92,7 @@ fun LoginScreen(
                     .clip(RoundedCornerShape(20.dp)),
                 contentScale = ContentScale.Inside,
 
-            )
+                )
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -102,19 +107,27 @@ fun LoginScreen(
                         if (rememberMe) {
                             sharedPreferences.edit { putString("saved_email", it.text) }
                         }
+                        emailError = !Patterns.EMAIL_ADDRESS.matcher(it.text).matches()
                     },
                     label = { Text("Email") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .alpha(0.8f),
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email)
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+                    isError = emailError
                 )
+                if (emailError) {
+                    Text(text = "Introduce un email válido.", color = MaterialTheme.colorScheme.error)
+                }
 
                 Spacer(modifier = Modifier.height(25.dp))
 
                 TextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = {
+                        password = it
+                        passwordError = it.text.length < 6
+                    },
                     label = { Text("Password") },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -130,14 +143,18 @@ fun LoginScreen(
                                 contentDescription = "Mostrar/ocultar contraseña"
                             )
                         }
-                    }
+                    },
+                    isError = passwordError
                 )
-
+                if (passwordError) {
+                    Text(text = "La contraseña debe tener al menos 6 caracteres", color = MaterialTheme.colorScheme.error)
+                }
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Button(
                     onClick = { signInUser(auth, email.text, password.text, localContext, navController) },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !emailError && !passwordError && email.text.isNotEmpty() && password.text.isNotEmpty()
                 ) {
                     Text(text = "Iniciar sesión")
                 }
@@ -145,14 +162,16 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Button(
-                    onClick = { registerUser(auth, email.text, password.text, localContext, navController) },
+                    onClick = { navController.navigate(Screen.Register.route) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = "Registrarse")
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 6.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 6.dp)
+                ) {
                     Checkbox(
                         checked = rememberMe,
                         onCheckedChange = { isChecked ->
@@ -166,7 +185,8 @@ fun LoginScreen(
                     Text(
                         text = "Recordar email",
                         color = Color.White,
-                        style = TextStyle(fontWeight = FontWeight.Bold))
+                        style = TextStyle(fontWeight = FontWeight.Bold)
+                    )
                 }
             }
         }
@@ -174,52 +194,30 @@ fun LoginScreen(
 }
 
 fun signInUser(auth: FirebaseAuth, email: String, password: String, context: Context, navController: NavController) {
-    if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-        Toast.makeText(context, "Por favor ingresa un correo válido", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    if (password.length < 6) {
-        Toast.makeText(context, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
-        return
-    }
-
     auth.signInWithEmailAndPassword(email, password)
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Login.route) { inclusive = true }
+                val user = auth.currentUser
+                if (user != null) {
+                    if (email == "admin@trainernotes.com") {
+                        // Es el administrador, se permite el acceso sin verificar
+                        Toast.makeText(context, "Bienvenido administrador", Toast.LENGTH_SHORT).show()
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    } else if (user.isEmailVerified) {
+                        // El correo está verificado, se permite el inicio de sesión
+                        Toast.makeText(context, "Usuario logeado correctamente", Toast.LENGTH_SHORT).show()
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    } else {
+                        // El correo no está verificado
+                        Toast.makeText(context, "Por favor, verifica tu correo electrónico", Toast.LENGTH_LONG).show()
+                    }
                 }
             } else {
                 Toast.makeText(context, "Correo o contraseña incorrectos", Toast.LENGTH_SHORT).show()
             }
         }
 }
-
-fun registerUser(auth: FirebaseAuth, email: String, password: String, context: Context, navController: NavController) {
-    if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-        Toast.makeText(context, "Por favor ingresa un correo válido", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    if (password.length < 6) {
-        Toast.makeText(context, "La contraseña debe tener al menos 6 caracteres", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    auth.createUserWithEmailAndPassword(email, password)
-        .addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                Toast.makeText(context, "Registro exitoso", Toast.LENGTH_SHORT).show()
-
-                navController.navigate(Screen.Home.route) {
-                    popUpTo(Screen.Login.route) { inclusive = true }
-                }
-            } else {
-                Toast.makeText(context, "Error al registrar el usuario", Toast.LENGTH_SHORT).show()
-            }
-        }
-}
-//TODO: añadir más formas de registro

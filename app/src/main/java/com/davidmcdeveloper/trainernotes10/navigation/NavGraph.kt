@@ -19,10 +19,10 @@ import com.davidmcdeveloper.trainernotes10.screens.HomeScreen
 import com.davidmcdeveloper.trainernotes10.screens.JugadoresScreen
 import com.davidmcdeveloper.trainernotes10.screens.LoginScreen
 import com.davidmcdeveloper.trainernotes10.screens.PerfilJugadorScreen
+import com.davidmcdeveloper.trainernotes10.screens.RegisterScreen
 import com.davidmcdeveloper.trainernotes10.screens.TeamDetailsScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-
 
 const val ARG_TEAM_NAME = "teamName"
 const val ARG_CATEGORY_NAME = "categoryName"
@@ -32,6 +32,7 @@ const val ARG_JUGADOR_ID = "jugadorId"
 sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Login : Screen("login")
+    object Register : Screen("register")
     object AddTeam : Screen("add_team")
     object AddCategory : Screen("addCategory/{$ARG_TEAM_ID}") {
         fun createRoute(teamId: String) = "addCategory/$teamId"
@@ -56,30 +57,36 @@ sealed class Screen(val route: String) {
     object Asistencias : Screen("asistencias/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "asistencias/$categoryName"
     }
+
     object Historial : Screen("historial/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "historial/$categoryName"
     }
+
     object EditJugador : Screen(
-        "jugador_edit/{$ARG_JUGADOR_ID}") {
+        "jugador_edit/{$ARG_JUGADOR_ID}"
+    ) {
         fun createRoute(
             jugadorId: String
         ) =
             "jugador_edit/$jugadorId"
     }
+
     object PerfilJugador : Screen(
-        "perfil_jugador/{$ARG_JUGADOR_ID}") { //Creamos la ruta para PerfilJugador
+        "perfil_jugador/{$ARG_JUGADOR_ID}"
+    ) { //Creamos la ruta para PerfilJugador
         fun createRoute(
             jugadorId: String
         ) =
             "perfil_jugador/$jugadorId"
     }
+
     object Documentos : Screen("documentos/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "documentos/$categoryName"
     }
+
     object AddDocumentos : Screen("addDocumentos/{$ARG_CATEGORY_NAME}") {
         fun createRoute(categoryName: String) = "addDocumentos/$categoryName"
     }
-
 }
 
 @Composable
@@ -89,6 +96,9 @@ fun AppNavGraph(navController: NavHostController, auth: FirebaseAuth, startDesti
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Screen.Login.route) {
             LoginScreen(navController = navController, auth = auth, context = navController.context)
+        }
+        composable(Screen.Register.route) { // Nueva ruta
+            RegisterScreen(navController = navController, auth = auth)
         }
         composable(Screen.Home.route) {
             HomeScreen(navController = navController)
