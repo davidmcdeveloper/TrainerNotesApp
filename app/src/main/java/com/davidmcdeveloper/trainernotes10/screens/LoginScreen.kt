@@ -212,7 +212,7 @@ fun signInUser(auth: FirebaseAuth, email: String, password: String, context: Con
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
                     } else {
-                        // El correo no está verificado y no se permite el inicio de sesión
+                        // El correo no está verificado
                         Toast.makeText(context, "Por favor, verifica tu correo electrónico", Toast.LENGTH_LONG).show()
                     }
                 }
