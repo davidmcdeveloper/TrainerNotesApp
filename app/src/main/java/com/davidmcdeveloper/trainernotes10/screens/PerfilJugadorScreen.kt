@@ -185,6 +185,7 @@ fun PerfilJugadorScreen(navController: NavController, db: FirebaseFirestore, jug
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(text = "Fecha de Nacimiento: ${jugador!!.fechaNacimiento}")
+                    Text(text = "Nº de Licencia: ${jugador!!.nLicencia}")
                     //Nueva seccion de valoracion.
                     Spacer(modifier = Modifier.height(16.dp))
                     //Columna para las habilidades.
