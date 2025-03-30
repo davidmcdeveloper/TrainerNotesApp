@@ -84,6 +84,7 @@ fun EditJugadorScreen(navController: NavController, db: FirebaseFirestore, jugad
     var primerApellido by remember { mutableStateOf("") }
     var fechaNacimiento by remember { mutableStateOf("") }
     var fotoUrl by remember { mutableStateOf("") }
+    var nLicencia by remember { mutableStateOf("") }
     //ExposedDropdownMenuBox
     //Posicion Primaria
     var posicionPrimariaOptions =
@@ -129,6 +130,7 @@ fun EditJugadorScreen(navController: NavController, db: FirebaseFirestore, jugad
             pesoSelectedText = it.peso
             alturaSelectedText = it.altura
             fotoUrl = it.fotoUrl //Recogemos la foto.
+            nLicencia = it.nLicencia ?: ""
         }
         isLoading = false
     }
@@ -439,6 +441,17 @@ fun EditJugadorScreen(navController: NavController, db: FirebaseFirestore, jugad
                                 }
                             )
                         }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(modifier = Modifier
+                            .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ){
+                            OutlinedTextField(
+                                value = nLicencia,
+                                onValueChange = { nLicencia = it },
+                                label = { Text("Nº Licencia") },
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(32.dp))
                         Button(
@@ -481,8 +494,9 @@ fun EditJugadorScreen(navController: NavController, db: FirebaseFirestore, jugad
                                                     fechaNacimiento,
                                                     jugadorImageUrl,
                                                     context,
-                                                    fotoUrl //Añadimos la url antigua
-                                                )
+                                                    fotoUrl, //Añadimos la url antigua
+                                                    nLicencia
+                                                    )
                                             } catch (e: Exception) {
                                                 snackbarHostState.showSnackbar("Error al actualizar el jugador")
                                             } finally {
@@ -530,7 +544,8 @@ suspend fun updateJugadorInFirestore(
     fechaNacimiento: String,
     jugadorImageUrl: String,
     context: Context,
-    oldImageUrl: String //Añadimos la url antigua
+    oldImageUrl: String, //Añadimos la url antigua
+    nLicencia: String
 ) {
     val jugador = hashMapOf(
         "nombre" to nombre,
@@ -540,7 +555,8 @@ suspend fun updateJugadorInFirestore(
         "posicionSecundaria" to posicionSecundaria,
         "peso" to peso,
         "altura" to altura,
-        "fotoUrl" to jugadorImageUrl
+        "fotoUrl" to jugadorImageUrl,
+        "nLicencia" to nLicencia
     )
     try {
         db.collection("jugadores").document(id).update(jugador as Map<String, Any>).await()
