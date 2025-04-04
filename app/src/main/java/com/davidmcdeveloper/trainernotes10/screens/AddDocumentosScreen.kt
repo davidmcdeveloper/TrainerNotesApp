@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -165,40 +168,52 @@ fun AddDocumentosScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 //Boton para añadir el documento
-                Button(onClick = {
-                    if (nombre.isNotEmpty() && url.isNotEmpty() && isUrlValid && !isAdding) {
-                        isAdding = true
-                        val documentId = generateDocumentId(nombre)
-                        addDocument(
-                            db = db,
-                            categoryName = categoryName,
-                            documentId = documentId,
-                            url = url,
-                            documentType = documentType, // Usamos el tipo seleccionado
-                            documentName = nombre, // Pasamos el nombre
-                            onSuccess = {
-                                Toast.makeText(
-                                    context,
-                                    "Documento añadido correctamente con ID: $documentId",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                navController.popBackStack()
-                            },
-                            onError = { error ->
-                                Toast.makeText(
-                                    context,
-                                    "Error al añadir el documento: $error",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
+                Button(
+                    onClick = {
+                        if (nombre.isNotEmpty() && url.isNotEmpty() && isUrlValid && !isAdding) {
+                            isAdding = true
+                            val documentId = generateDocumentId(nombre)
+                            addDocument(
+                                db = db,
+                                categoryName = categoryName,
+                                documentId = documentId,
+                                url = url,
+                                documentType = documentType, // Usamos el tipo seleccionado
+                                documentName = nombre, // Pasamos el nombre
+                                onSuccess = {
+                                    Toast.makeText(
+                                        context,
+                                        "Documento añadido correctamente con ID: $documentId",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.popBackStack()
+                                    isAdding = false  // Reset isAdding on success
+                                },
+                                onError = { error ->
+                                    Toast.makeText(
+                                        context,
+                                        "Error al añadir el documento: $error",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    isAdding = false  // Reset isAdding on error
+                                }
+                            )
+                        } else {
+                            Toast.makeText(context, "Introduce un nombre y una URL válida", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    },
+                    enabled = !isAdding
+                ) {
+                    if (isAdding) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White
                         )
                     } else {
-                        Toast.makeText(context, "Introduce un nombre y una URL válida", Toast.LENGTH_SHORT)
-                            .show()
+                        Text("Añadir")
                     }
-                    isAdding = false
-                }, enabled = !isAdding) {
-                    Text("Añadir")
                 }
             }
         }
