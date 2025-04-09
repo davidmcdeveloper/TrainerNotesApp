@@ -1,6 +1,7 @@
 package com.davidmcdeveloper.trainernotes10.screens
 
 import android.content.Context
+import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -16,13 +17,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -68,6 +72,7 @@ fun LoginScreen(
     var emailError by remember { mutableStateOf(false) }
     //Variable para guardar el error de la contraseña
     var passwordError by remember { mutableStateOf(false) }
+    var showForgotPasswordDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -167,6 +172,11 @@ fun LoginScreen(
                 ) {
                     Text(text = "Registrarse")
                 }
+                TextButton(onClick = {
+                    showForgotPasswordDialog = true
+                }) {
+                    Text("Olvidé mi contraseña", color = Color.White)
+                }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -188,6 +198,11 @@ fun LoginScreen(
                         style = TextStyle(fontWeight = FontWeight.Bold)
                     )
                 }
+            }
+        }
+        if (showForgotPasswordDialog) {
+            ForgotPasswordDialog(auth = auth, context = localContext) {
+                showForgotPasswordDialog = false
             }
         }
     }
@@ -218,6 +233,72 @@ fun signInUser(auth: FirebaseAuth, email: String, password: String, context: Con
                 }
             } else {
                 Toast.makeText(context, "Correo o contraseña incorrectos", Toast.LENGTH_SHORT).show()
+            }
+        }
+}
+
+@Composable
+fun ForgotPasswordDialog(auth: FirebaseAuth, context: Context, onDismiss: () -> Unit) {
+    val showDialog = remember { mutableStateOf(true) }
+    val resetEmail = remember { mutableStateOf("") }
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = {
+                showDialog.value = false
+                onDismiss() // Llamamos a la función onDismiss
+            },
+            title = { Text("Restablecer Contraseña") },
+            text = {
+                Column {
+                    Text("Introduce tu correo electrónico para restablecer la contraseña:")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = resetEmail.value,
+                        onValueChange = { resetEmail.value = it },
+                        label = { Text("Correo Electrónico") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDialog.value = false
+                        sendPasswordResetEmail(auth, resetEmail.value, context)
+                        onDismiss() // Llamamos a la función onDismiss
+                    }
+                ) {
+                    Text("Enviar")
+                }
+            },
+            dismissButton = {
+                Button(onClick = {
+                    showDialog.value = false
+                    onDismiss() // Llamamos a la función onDismiss
+                }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+}
+
+fun sendPasswordResetEmail(auth: FirebaseAuth, email: String, context: Context) {
+    if (email.isBlank()) {
+        Toast.makeText(context, "Por favor, introduce tu correo electrónico.", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    auth.sendPasswordResetEmail(email)
+        .addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Toast.makeText(context, "Se ha enviado un correo para restablecer la contraseña a $email", Toast.LENGTH_LONG).show()
+            } else {
+                // Manejo de errores:  Es importante dar un feedback claro al usuario
+                val errorMessage = task.exception?.message ?: "Error al enviar el correo de restablecimiento."
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+                // Opcional: Puedes loguear el error para depuración
+                Log.e("LoginScreen", "Error sending password reset email: $errorMessage")
             }
         }
 }
