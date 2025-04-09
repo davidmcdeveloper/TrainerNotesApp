@@ -169,12 +169,12 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                 item {
                     //Añadir Foto
                     Spacer(modifier = Modifier.height(8.dp)) //Reducimos el spacer.
-                    //AÑADIMOS BOX PARA SUPERPONER ELEMENTOS
+                    //Añadimos box para superponer elementos.
                     Box(
                         modifier = Modifier
                             .size(100.dp) //Reducimos el tamaño.
                     ) {
-                        //IMAGEN DEL JUGADOR
+                        //Imagen del jugador
                         if (jugadorImageUri != null) {
                             Image(
                                 painter = rememberAsyncImagePainter(
@@ -200,7 +200,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                                 contentScale = ContentScale.Crop
                             )
                         }
-                        //BOTON ADD
+                        //Boton Add
                         Button(
                             onClick = { launcher.launch("image/*") },
                             modifier = Modifier
@@ -229,7 +229,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                             label = { Text("Nombre") },
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(8.dp) //Reducimos el padding.
+                                .padding(8.dp)
                         )
                         OutlinedTextField(
                             value = primerApellido,
@@ -237,7 +237,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                             label = { Text("Primer Apellido") },
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(8.dp) //Reducimos el padding.
+                                .padding(8.dp)
                         )
                     }
                     //POSICION PRIMARIA Y SECUNDARIA EN FILA
@@ -322,7 +322,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                             onExpandedChange = { pesoExpanded = !pesoExpanded },
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(8.dp) //Reducimos el padding.
+                                .padding(8.dp)
                         ) {
                             OutlinedTextField(
                                 value = pesoSelectedText,
@@ -355,7 +355,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                             onExpandedChange = { alturaExpanded = !alturaExpanded },
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(8.dp) //Reducimos el padding.
+                                .padding(8.dp)
                         ) {
                             OutlinedTextField(
                                 value = alturaSelectedText,
@@ -391,7 +391,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                         label = { Text(text = "Fecha de Nacimiento") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp) //Reducimos el padding.
+                            .padding(8.dp)
                             .clickable { showDatePicker = true },
                         trailingIcon = {
                             Icon(
@@ -408,9 +408,9 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
                         label = { Text("Nº Licencia (Opcional)") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp) //Reducimos el padding.
+                            .padding(8.dp)
                     )
-                    Spacer(modifier = Modifier.height(16.dp)) //Reducimos el spacer.
+                    Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
                             scope.launch {
@@ -478,7 +478,7 @@ fun AddJugadorScreen(navController: NavController, categoryName: String, db: Fir
 
 fun generateJugadorId(nombre: String, primerApellido: String): String {
     val uniqueId = UUID.randomUUID().toString().substring(0, 8) // Tomamos los primeros 8 caracteres del UUID
-    val sanitizedNombre = nombre.filter { it.isLetterOrDigit() }.take(9).lowercase() // Tomamos los primeros 5 caracteres del nombre
-    val sanitizedApellido = primerApellido.filter { it.isLetterOrDigit() }.take(9).lowercase() // Tomamos los primeros 5 caracteres del apellido
+    val sanitizedNombre = nombre.filter { it.isLetterOrDigit() }.take(9).lowercase() // Tomamos los primeros 9 caracteres del nombre
+    val sanitizedApellido = primerApellido.filter { it.isLetterOrDigit() }.take(9).lowercase() // Tomamos los primeros 9 caracteres del apellido
     return "${sanitizedNombre}-${sanitizedApellido}-$uniqueId" // Ejemplo: luis-perez-f4a2b9d1
 }

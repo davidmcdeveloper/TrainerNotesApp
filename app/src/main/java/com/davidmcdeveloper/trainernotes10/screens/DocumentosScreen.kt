@@ -189,14 +189,14 @@ fun DocumentosScreen(navController: NavController, categoryName: String, db: Fir
                                             .align(Alignment.CenterVertically)
                                     )
                                     "Video" -> Icon(
-                                        Icons.Filled.PlayArrow,
+                                        Icons.Filled.PlayArrow, // Usamos un icono de video
                                         contentDescription = "Video",
                                         modifier = Modifier
                                             .fillMaxHeight()
                                             .align(Alignment.CenterVertically)
                                     )
                                     "Documento" -> Icon(
-                                        painter = painterResource(id = R.drawable.documenticon),
+                                        painter = painterResource(id = R.drawable.documenticon), // Usamos un icono de documento
                                         contentDescription = "Documento",
                                         modifier = Modifier
                                             .fillMaxHeight()

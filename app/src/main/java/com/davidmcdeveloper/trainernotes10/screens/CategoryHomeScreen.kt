@@ -67,7 +67,7 @@ fun CategoryHomeScreen(navController: NavController, categoryName: String, db: F
     var isImageLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
-    // LaunchedEffect unificado para obtener teamName e imageUrl
+    // LaunchedEffect para obtener teamName e imageUrl
     LaunchedEffect(key1 = categoryName) {
         val categoryRef = db.collection("equipos")
             .whereArrayContains("categorias", categoryName)
