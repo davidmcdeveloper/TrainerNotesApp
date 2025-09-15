@@ -85,7 +85,7 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
             modifier = Modifier
-                .padding(top = 100.dp)
+                .padding(top = 60.dp)
                 .fillMaxWidth()
         ) {
             Image(
@@ -125,7 +125,7 @@ fun LoginScreen(
                     Text(text = "Introduce un email válido.", color = MaterialTheme.colorScheme.error)
                 }
 
-                Spacer(modifier = Modifier.height(25.dp))
+                Spacer(modifier = Modifier.height(5.dp))
 
                 TextField(
                     value = password,
@@ -154,7 +154,7 @@ fun LoginScreen(
                 if (passwordError) {
                     Text(text = "La contraseña debe tener al menos 6 caracteres", color = MaterialTheme.colorScheme.error)
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Button(
                     onClick = { signInUser(auth, email.text, password.text, localContext, navController) },
@@ -164,7 +164,7 @@ fun LoginScreen(
                     Text(text = "Iniciar sesión")
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Button(
                     onClick = { navController.navigate(Screen.Register.route) },

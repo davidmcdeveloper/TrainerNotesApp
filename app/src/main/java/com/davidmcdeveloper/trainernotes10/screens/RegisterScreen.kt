@@ -58,7 +58,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 @Composable
 fun RegisterScreen(navController: NavController, auth: FirebaseAuth) {
     var nombreCompleto by remember { mutableStateOf(TextFieldValue("")) }
-    var fechaNacimiento by remember { mutableStateOf("") } //Ahora es String
+    var fechaNacimiento by remember { mutableStateOf("") }
+    var rol by remember { mutableStateOf(TextFieldValue("")) }
     var email by remember { mutableStateOf(TextFieldValue("")) }
     var password by remember { mutableStateOf(TextFieldValue("")) }
     var confirmPassword by remember { mutableStateOf(TextFieldValue("")) }
@@ -272,6 +273,7 @@ fun registerUser(auth: FirebaseAuth, email: String, password: String, nombre: St
                         "email" to email,
                         "nombreCompleto" to nombre,
                         "fechaNacimiento" to fechaNacimiento,
+
                     )
                     db.collection("users").document(it.uid).set(userMap)
                         .addOnSuccessListener {
